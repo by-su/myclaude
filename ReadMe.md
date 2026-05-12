@@ -1,6 +1,6 @@
 # myclaude
 
-Claude Code · Codex · Gemini CLI에서 공용으로 쓰는 **개인 스킬 모음**과 설치 스크립트.
+Claude Code · Codex · Gemini CLI에서 공용으로 쓰는 **개인 스킬·에이전트 모음**과 설치 스크립트.
 다른 컴퓨터에 옮긴 뒤 `install.sh` 한 줄만 실행하면 동일한 환경이 세팅된다.
 
 ## 폴더 구조
@@ -8,10 +8,12 @@ Claude Code · Codex · Gemini CLI에서 공용으로 쓰는 **개인 스킬 모
 ```
 myclaude/
 ├── ReadMe.md
+├── agents/                 # Claude Code 에이전트 (→ ~/.claude/agents 심볼릭 링크)
+│   └── nextjs-code-reviewer.md
 ├── setup/
 │   └── init/
-│       └── install.sh      # ~/.claude, ~/.codex, ~/.gemini 에 skills/ 심볼릭 링크
-└── skills/                 # 실제 스킬 본체 (이 폴더가 단일 출처)
+│       └── install.sh      # skills/ + agents/ 심볼릭 링크 & MCP 설정
+└── skills/                 # 실제 스킬 본체 (→ ~/.claude/skills 등 심볼릭 링크)
     ├── algorithmic-art/
     ├── canvas-design/
     ├── mcp-builder/
@@ -32,11 +34,12 @@ bash setup/init/install.sh
 
 1. `~/.claude`, `~/.codex`, `~/.gemini` 디렉터리를 만든다 (이미 있으면 그대로).
 2. 각 디렉터리 아래 `skills/` 를 **이 레포의 `skills/` 폴더로 가는 심볼릭 링크**로 만든다.
-3. 기존 `skills` 링크가 있으면 새 링크로 교체하고, 실제 디렉터리면 덮어쓰지 않고 안전하게 중단한다.
+3. `~/.claude/agents/` 를 **이 레포의 `agents/` 폴더로 가는 심볼릭 링크**로 만든다.
+4. 기존 링크가 있으면 새 링크로 교체하고, 실제 디렉터리면 덮어쓰지 않고 안전하게 중단한다.
 
-심볼릭 링크 방식이라 `skills/` 하위 파일을 수정하면 세 CLI 모두에 즉시 반영된다.
+심볼릭 링크 방식이라 `skills/` · `agents/` 하위 파일을 수정하면 즉시 반영된다.
 
-> ⚠️ 만약 `~/.claude/skills` 등이 이미 **실제 폴더**로 존재하면 스크립트가 종료된다. 안에 든 내용을 백업/이동시키고 폴더를 비운 뒤 다시 실행할 것.
+> ⚠️ 만약 `~/.claude/skills` · `~/.claude/agents` 등이 이미 **실제 폴더**로 존재하면 스크립트가 종료된다. 안에 든 내용을 백업/이동시키고 폴더를 비운 뒤 다시 실행할 것.
 
 ## 스킬 목록
 
@@ -53,10 +56,21 @@ bash setup/init/install.sh
 
 자세한 설명은 각 스킬 폴더의 `SKILL.md` 참조.
 
-## 새 스킬 추가
+## 에이전트 목록
 
+| 에이전트 | 용도 |
+| --- | --- |
+| `nextjs-code-reviewer` | React/Next.js (App Router) 코드 리뷰 — 아키텍처·성능·타입 안전성 검토 |
+
+## 새 스킬 / 에이전트 추가
+
+**스킬:**
 1. `skills/<skill-name>/SKILL.md` 를 만든다. (`skill-creator` 스킬을 쓰면 편하다.)
 2. 끝. 심볼릭 링크라 별도 재설치 불필요 — 세 CLI 모두 즉시 인식한다.
+
+**에이전트:**
+1. `agents/<agent-name>.md` 를 만든다. (`/agents` 명령으로 생성 가능.)
+2. 끝. 심볼릭 링크라 별도 재설치 불필요 — Claude Code가 즉시 인식한다.
 
 ## 다른 컴퓨터로 옮기기
 
@@ -68,4 +82,4 @@ git clone <repo>   # 또는 그냥 폴더 복사
 bash myclaude/setup/init/install.sh
 ```
 
-`install.sh` 는 자기 위치(`setup/init/`) 기준으로 `../../skills` 를 절대경로로 풀어내므로, 폴더를 어디에 두든 구조만 유지되면 동작한다.
+`install.sh` 는 자기 위치(`setup/init/`) 기준으로 `../../skills`, `../../agents` 를 절대경로로 풀어내므로, 폴더를 어디에 두든 구조만 유지되면 동작한다.
