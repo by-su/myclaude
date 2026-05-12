@@ -27,8 +27,8 @@ if [ -z "$GITHUB_PERSONAL_ACCESS_TOKEN" ]; then
     echo "  SKIP: GITHUB_PERSONAL_ACCESS_TOKEN 이 비어있습니다."
 else
     claude mcp add -s user \
-        -e "GITHUB_PERSONAL_ACCESS_TOKEN=$GITHUB_PERSONAL_ACCESS_TOKEN" \
         github \
+        -e "GITHUB_PERSONAL_ACCESS_TOKEN=$GITHUB_PERSONAL_ACCESS_TOKEN" \
         -- docker run -i --rm -e GITHUB_PERSONAL_ACCESS_TOKEN \
         ghcr.io/github/github-mcp-server
     echo "  OK"
@@ -45,12 +45,12 @@ MYSQL_ENVS=""
 
 # shellcheck disable=SC2086
 claude mcp add -s user \
+    mysql \
     -e "ALLOW_INSERT_OPERATION=false" \
     -e "ALLOW_UPDATE_OPERATION=false" \
     -e "ALLOW_DELETE_OPERATION=false" \
     -e "ALLOW_DDL_OPERATION=false" \
     $MYSQL_ENVS \
-    mysql \
     -- npx -y @benborla29/mcp-server-mysql
 echo "  OK"
 
@@ -60,9 +60,9 @@ if [ -z "$GOOGLE_CLIENT_ID" ] || [ -z "$GOOGLE_CLIENT_SECRET" ]; then
     echo "  SKIP: GOOGLE_CLIENT_ID 또는 GOOGLE_CLIENT_SECRET 이 비어있습니다."
 else
     claude mcp add -s user \
+        google-docs \
         -e "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" \
         -e "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" \
-        google-docs \
         -- npx -y @a-bonus/google-docs-mcp
     echo "  OK"
 fi
