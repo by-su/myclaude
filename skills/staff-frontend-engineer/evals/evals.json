@@ -1,0 +1,23 @@
+{
+  "skill_name": "staff-frontend-engineer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "사용자 목록을 보여주는 테이블 페이지 만들어줘. 검색, 페이지네이션, 역할별 필터링이 필요해. API는 `/api/users`에서 가져와.",
+      "expected_output": "Architecture Overview, Types/Hooks/Components 분리된 코드, Review Points가 포함된 응답. SoC 원칙에 따라 데이터 페칭은 훅으로, UI는 컴포넌트로 분리. shadcn/ui Table, Input, Select 등 활용.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "댓글 시스템 컴포넌트 만들어줘. 댓글 작성, 수정, 삭제, 대댓글 기능이 있어야 해. 낙관적 업데이트도 적용해줘.",
+      "expected_output": "TanStack Query의 optimistic update 패턴 적용. 재귀적 대댓글 구조. Types/Hooks/Components 분리. ErrorBoundary와 Suspense 활용.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "멀티스텝 폼 만들어줘. 1단계: 개인정보, 2단계: 주소, 3단계: 확인. 각 단계마다 유효성 검증이 있어야 하고, 뒤로 가기해도 데이터가 유지되어야 해.",
+      "expected_output": "Zod 스키마 기반 단계별 유효성 검증. 상태 관리로 스텝 간 데이터 유지. Compound 또는 Headless 패턴으로 스텝 컴포넌트 설계. shadcn/ui Form 컴포넌트 활용.",
+      "files": []
+    }
+  ]
+}
