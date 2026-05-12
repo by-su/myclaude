@@ -1,0 +1,104 @@
+{
+  "skill_name": "git-commit-assistant",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "작업한 Next.js 프로젝트 코드를 커밋하려고 해. 로그인 기능을 새로 추가했고, 기존 사용자 API에서 null 처리 버그도 잡았어. 커밋 도와줘.",
+      "expected_output": "1단계 검증(디버그 코드 스캔, TODO 포맷, prettier, 테스트)을 수행한 뒤, 기능 추가와 버그 수정을 별도 atomic commit으로 나눠 Conventional Commits 메시지로 커밋 계획을 제안하는 흐름",
+      "files": [],
+      "assertions": [
+        {
+          "id": "eval1-split-commits",
+          "description": "커밋을 2개 이상으로 분리 제안한다",
+          "check": "Response proposes at least 2 separate commits (e.g. [1/2], [2/2] markers or equivalent numbering)"
+        },
+        {
+          "id": "eval1-feat-type",
+          "description": "로그인 기능에 feat: 타입을 사용한다",
+          "check": "Response includes a commit with 'feat' type for the login feature"
+        },
+        {
+          "id": "eval1-fix-type",
+          "description": "버그 수정에 fix: 타입을 사용한다",
+          "check": "Response includes a commit with 'fix' type for the null-check bug"
+        },
+        {
+          "id": "eval1-console-log-found",
+          "description": "console.log를 발견하고 위치를 보고한다",
+          "check": "Response mentions finding console.log and its location (login.ts or line 34)"
+        },
+        {
+          "id": "eval1-todo-format",
+          "description": "TODO 주석 포맷 통일을 언급한다",
+          "check": "Response mentions standardizing TODO comment format (// TODO: ...)"
+        },
+        {
+          "id": "eval1-test-check",
+          "description": "테스트 실행을 언급한다",
+          "check": "Response mentions running tests (npm test or vitest or test pass/fail status)"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "변경사항 커밋 해줘. console.log 몇 개 남아있는데 자동으로 정리해줬으면 좋겠어.",
+      "expected_output": "console.log 위치를 스캔해서 제거 목록 보여주고 확인 후 삭제, 이후 커밋 진행",
+      "files": [],
+      "assertions": [
+        {
+          "id": "eval2-both-logs-found",
+          "description": "두 파일의 console.log를 모두 발견한다",
+          "check": "Response mentions both UserCard.tsx and useAuth.ts as containing console.log"
+        },
+        {
+          "id": "eval2-location-reported",
+          "description": "파일명과 줄번호를 명시적으로 보고한다",
+          "check": "Response lists file paths and/or line numbers for the found console.log statements"
+        },
+        {
+          "id": "eval2-confirm-before-delete",
+          "description": "삭제 전 사용자 확인을 요청한다",
+          "check": "Response asks user to confirm before removing the console.log lines"
+        },
+        {
+          "id": "eval2-commit-follows",
+          "description": "정리 후 커밋 계획으로 이어진다",
+          "check": "Response includes a commit plan or commit execution after the cleanup step"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "git commit해줘. 테스트 코드 추가하고 README도 업데이트했고, 패키지 의존성도 새로 추가했어.",
+      "expected_output": "test:, docs:, chore: 세 가지 타입으로 분리해서 각각 atomic commit하는 계획을 제안",
+      "files": [],
+      "assertions": [
+        {
+          "id": "eval3-three-commits",
+          "description": "정확히 3개의 커밋으로 분리 제안한다",
+          "check": "Response proposes exactly 3 separate commits (or at least 3 distinct commit units)"
+        },
+        {
+          "id": "eval3-test-type",
+          "description": "테스트 파일에 test: 타입을 사용한다",
+          "check": "Response includes a commit with 'test' type for tests/auth.test.ts"
+        },
+        {
+          "id": "eval3-docs-type",
+          "description": "README에 docs: 타입을 사용한다",
+          "check": "Response includes a commit with 'docs' type for README.md"
+        },
+        {
+          "id": "eval3-chore-type",
+          "description": "package.json에 chore: 타입을 사용한다",
+          "check": "Response includes a commit with 'chore' type for package.json"
+        },
+        {
+          "id": "eval3-explicit-staging",
+          "description": "파일을 명시적으로 스테이징한다 (git add -A 미사용)",
+          "check": "Response shows 'git add <specific-file>' commands rather than 'git add -A' or 'git add .'"
+        }
+      ]
+    }
+  ]
+}
