@@ -1,0 +1,23 @@
+{
+  "skill_name": "wireframe-architect",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "이 PRD 파일을 보고 와이어프레임 만들어줘. /Users/bysu/.claude/skills/wireframe-architect-workspace/test-prd-todo.md",
+      "expected_output": "TaskFlow 할일 관리 앱의 6개 화면에 대한 Lo-fi 와이어프레임 HTML 파일. 모바일/데스크탑 반응형, 컴포넌트 명세 포함.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "이 PRD 읽고 화면 설계해줘. /Users/bysu/.claude/skills/wireframe-architect-workspace/test-prd-marketplace.md",
+      "expected_output": "중고마켓 12개 화면에 대한 Lo-fi 와이어프레임 HTML. 구매/판매 유저 플로우, 채팅 화면, 반응형 레이아웃 포함.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "PRD 기반으로 UI 와이어프레임 생성해줘. /Users/bysu/.claude/skills/wireframe-architect-workspace/test-prd-saas.md",
+      "expected_output": "AnalyticsHub SaaS 대시보드 11개 화면 와이어프레임. 데스크탑 우선 레이아웃, 차트/테이블 컴포넌트, KPI 카드 등 데이터 시각화 요소 포함.",
+      "files": []
+    }
+  ]
+}
