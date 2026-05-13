@@ -4,6 +4,13 @@
 Input: a JSON file with the shape described in SKILL.md (#palettes-json-schema).
 Output: a standalone HTML file (no external dependencies).
 
+The renderer is forgiving about palette size: only Primary, Background, Text are
+required. Secondary, Accent, Surface, Muted, Border are all optional and auto-
+derived where it makes sense. For every foreground/background pair that appears
+in the rendered preview, we compute the WCAG contrast ratio and show it — so
+users can see at a glance whether button text, badge text, muted text, etc. are
+actually readable on the chosen surfaces.
+
 Usage:
     python3 render_preview.py --input palettes.json --output palette-preview.html
 """
@@ -42,29 +49,37 @@ def contrast_ratio(fg: str, bg: str) -> float:
     return (lighter + 0.05) / (darker + 0.05)
 
 
-def _adjust_lightness(hex_color: str, delta: float) -> str:
-    """Adjust hex color's lightness by ±delta (in HSL space). Returns new #RRGGBB."""
+def _hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
     h = hex_color.lstrip("#")
     if len(h) == 3:
         h = "".join(c * 2 for c in h)
-    r, g, b = (int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+
+
+def _rgb_to_hex(r: int, g: int, b: int) -> str:
+    return "#{:02X}{:02X}{:02X}".format(
+        max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b))
+    )
+
+
+def _rgb_to_hsl(r: int, g: int, b: int) -> tuple[float, float, float]:
+    r, g, b = r / 255, g / 255, b / 255
     mx, mn = max(r, g, b), min(r, g, b)
     L = (mx + mn) / 2
     if mx == mn:
-        H = 0.0
-        S = 0.0
+        return 0.0, 0.0, L
+    d = mx - mn
+    S = d / (2 - mx - mn) if L > 0.5 else d / (mx + mn)
+    if mx == r:
+        H = (g - b) / d + (6 if g < b else 0)
+    elif mx == g:
+        H = (b - r) / d + 2
     else:
-        d = mx - mn
-        S = d / (2 - mx - mn) if L > 0.5 else d / (mx + mn)
-        if mx == r:
-            H = (g - b) / d + (6 if g < b else 0)
-        elif mx == g:
-            H = (b - r) / d + 2
-        else:
-            H = (r - g) / d + 4
-        H /= 6
-    new_L = max(0.0, min(1.0, L + delta))
+        H = (r - g) / d + 4
+    return H / 6, S, L
 
+
+def _hsl_to_rgb(H: float, S: float, L: float) -> tuple[int, int, int]:
     def hue_to_rgb(p: float, q: float, t: float) -> float:
         if t < 0: t += 1
         if t > 1: t -= 1
@@ -74,14 +89,31 @@ def _adjust_lightness(hex_color: str, delta: float) -> str:
         return p
 
     if S == 0:
-        nr = ng = nb = new_L
+        r = g = b = L
     else:
-        q = new_L * (1 + S) if new_L < 0.5 else new_L + S - new_L * S
-        p = 2 * new_L - q
-        nr = hue_to_rgb(p, q, H + 1 / 3)
-        ng = hue_to_rgb(p, q, H)
-        nb = hue_to_rgb(p, q, H - 1 / 3)
-    return "#{:02X}{:02X}{:02X}".format(int(nr * 255), int(ng * 255), int(nb * 255))
+        q = L * (1 + S) if L < 0.5 else L + S - L * S
+        p = 2 * L - q
+        r = hue_to_rgb(p, q, H + 1 / 3)
+        g = hue_to_rgb(p, q, H)
+        b = hue_to_rgb(p, q, H - 1 / 3)
+    return int(r * 255), int(g * 255), int(b * 255)
+
+
+def _adjust_lightness(hex_color: str, delta: float) -> str:
+    r, g, b = _hex_to_rgb(hex_color)
+    H, S, L = _rgb_to_hsl(r, g, b)
+    return _rgb_to_hex(*_hsl_to_rgb(H, S, max(0.0, min(1.0, L + delta))))
+
+
+def _mix(hex_a: str, hex_b: str, t: float) -> str:
+    """Linear mix in sRGB. t=0 → all a, t=1 → all b."""
+    ar, ag, ab = _hex_to_rgb(hex_a)
+    br, bg, bb = _hex_to_rgb(hex_b)
+    return _rgb_to_hex(
+        int(ar + (br - ar) * t),
+        int(ag + (bg - ag) * t),
+        int(ab + (bb - ab) * t),
+    )
 
 
 def derive_surface(bg_hex: str) -> str:
@@ -93,6 +125,59 @@ def derive_surface(bg_hex: str) -> str:
     return _adjust_lightness(bg_hex, -0.04)
 
 
+def derive_muted_text(text_hex: str, bg_hex: str) -> str:
+    """Muted body text: mix text toward bg until it sits around 5:1 contrast.
+
+    We target 5:1 (just above AA 4.5:1) so descriptions stay legible while
+    feeling visibly less prominent than primary body text.
+    """
+    target = 5.0
+    # bisect over the mix ratio
+    lo, hi = 0.0, 0.9
+    best = text_hex
+    for _ in range(20):
+        mid = (lo + hi) / 2
+        candidate = _mix(text_hex, bg_hex, mid)
+        if contrast_ratio(candidate, bg_hex) >= target:
+            best = candidate
+            lo = mid
+        else:
+            hi = mid
+    return best
+
+
+def derive_border(bg_hex: str, text_hex: str) -> str:
+    """Border: low-contrast separator, mixed from text toward bg."""
+    return _mix(text_hex, bg_hex, 0.82)
+
+
+def pick_on_color(chip_hex: str, text_hex: str, bg_hex: str) -> tuple[str, float]:
+    """Pick the best foreground color to place text on top of `chip_hex`.
+
+    Tries (in order): the palette's Text, the palette's Background, pure light,
+    pure dark — and returns whichever gives the best contrast. We try the
+    palette's own colors first to keep the tinted feel consistent; only fall
+    back to pure white/black if neither palette token reaches AA (4.5:1).
+    """
+    candidates = [
+        ("text", text_hex),
+        ("bg", bg_hex),
+        ("light", "#F8F8F9"),
+        ("dark", "#0E0F12"),
+    ]
+    # Prefer the first candidate that meets AA. If none does, return the best.
+    best = candidates[0][1]
+    best_ratio = contrast_ratio(best, chip_hex)
+    for _, hex_ in candidates:
+        r = contrast_ratio(hex_, chip_hex)
+        if r >= 4.5:
+            return hex_, r
+        if r > best_ratio:
+            best = hex_
+            best_ratio = r
+    return best, best_ratio
+
+
 def wcag_label(ratio: float) -> tuple[str, str]:
     """Return (label, css_class) for a contrast ratio."""
     if ratio >= 7:
@@ -100,14 +185,123 @@ def wcag_label(ratio: float) -> tuple[str, str]:
     if ratio >= 4.5:
         return (f"{ratio:.1f}:1 AA", "pass")
     if ratio >= 3:
-        return (f"{ratio:.1f}:1 LargeOnly", "warn")
+        return (f"{ratio:.1f}:1 Large", "warn")
     return (f"{ratio:.1f}:1 Fail", "fail")
+
+
+# ---------- Role resolution ----------
+
+def _color_by_role(colors: list[dict], role: str) -> dict | None:
+    for c in colors:
+        if c.get("role", "").lower() == role.lower():
+            return c
+    return None
+
+
+def resolve_palette(palette: dict) -> dict:
+    """Resolve a palette's color roles, deriving anything missing.
+
+    Returns a dict of {role_name: hex} for: primary, secondary, accent,
+    surface, background, text, muted, border, on_primary, on_accent,
+    on_surface. Roles that the user did not specify are derived sensibly.
+    """
+    colors = palette.get("colors", [])
+    bg = _color_by_role(colors, "Background")
+    text = _color_by_role(colors, "Text")
+    primary = _color_by_role(colors, "Primary")
+    if not (bg and text and primary):
+        missing = [r for r, c in (("Background", bg), ("Text", text), ("Primary", primary)) if not c]
+        raise ValueError(
+            f"팔레트 '{palette.get('name', '?')}'에 필수 역할이 없습니다: {missing}. "
+            "Primary, Background, Text는 반드시 있어야 합니다."
+        )
+
+    bg_hex = bg["hex"]
+    text_hex = text["hex"]
+    primary_hex = primary["hex"]
+
+    secondary = _color_by_role(colors, "Secondary")
+    accent = _color_by_role(colors, "Accent")
+    surface = _color_by_role(colors, "Surface")
+    muted = _color_by_role(colors, "Muted")
+    border = _color_by_role(colors, "Border")
+
+    surface_hex = surface["hex"] if surface else derive_surface(bg_hex)
+    muted_hex = muted["hex"] if muted else derive_muted_text(text_hex, bg_hex)
+    border_hex = border["hex"] if border else derive_border(bg_hex, text_hex)
+
+    # secondary/accent are *optional* — fall back to primary so CSS never breaks
+    secondary_hex = secondary["hex"] if secondary else primary_hex
+    accent_hex = accent["hex"] if accent else primary_hex
+
+    on_primary_hex, _ = pick_on_color(primary_hex, text_hex, bg_hex)
+    on_accent_hex, _ = pick_on_color(accent_hex, text_hex, bg_hex)
+    on_surface_hex = text_hex  # surface is close to bg, so palette text works
+
+    return {
+        "primary": primary_hex,
+        "secondary": secondary_hex,
+        "accent": accent_hex,
+        "surface": surface_hex,
+        "background": bg_hex,
+        "text": text_hex,
+        "muted": muted_hex,
+        "border": border_hex,
+        "on_primary": on_primary_hex,
+        "on_accent": on_accent_hex,
+        "on_surface": on_surface_hex,
+        # Track which roles were derived (vs. explicit)
+        "_derived": {
+            "secondary": secondary is None,
+            "accent": accent is None,
+            "surface": surface is None,
+            "muted": muted is None,
+            "border": border is None,
+        },
+    }
+
+
+def build_contrast_report(r: dict) -> list[dict]:
+    """Compute the contrast pairs that actually appear in the rendered preview.
+
+    Each row is shown in the UI so the user knows whether real text is
+    readable, not just abstract Text-on-Background.
+    """
+    pairs = [
+        ("Text → Background",      r["text"],       r["background"]),
+        ("Text → Surface",         r["text"],       r["surface"]),
+        ("On-Primary → Primary",   r["on_primary"], r["primary"]),
+        ("Muted → Background",     r["muted"],      r["background"]),
+    ]
+    # Only show accent row if accent is meaningfully different from primary
+    if r["accent"].lower() != r["primary"].lower():
+        pairs.append(("On-Accent → Accent", r["on_accent"], r["accent"]))
+
+    rows = []
+    for label, fg, bg in pairs:
+        ratio = contrast_ratio(fg, bg)
+        text, css_class = wcag_label(ratio)
+        rows.append({"pair": label, "fg": fg, "bg": bg, "text": text, "class": css_class})
+    return rows
 
 
 # ---------- HTML rendering ----------
 
 _PALETTE_CARD = """
-<article class="palette" style="--p-primary:{primary};--p-secondary:{secondary};--p-accent:{accent};--p-bg:{bg};--p-text:{text};--p-surface:{surface};--shell-fade:{shell_fade};">
+<article class="palette" style="
+  --p-primary:{primary};
+  --p-secondary:{secondary};
+  --p-accent:{accent};
+  --p-surface:{surface};
+  --p-bg:{bg};
+  --p-text:{text};
+  --p-muted:{muted};
+  --p-border:{border};
+  --p-on-primary:{on_primary};
+  --p-on-accent:{on_accent};
+  --p-on-surface:{on_surface};
+  --shell-fade:{shell_fade};
+">
   <header class="palette-head">
     <h2>{idx}. {name}</h2>
     <p class="tagline">{tagline}</p>
@@ -128,8 +322,10 @@ _PALETTE_CARD = """
   </section>
 
   <section class="contrast">
-    <h4>대비비 (Text → Background)</h4>
-    <span class="badge badge-{contrast_class}">{contrast_label}</span>
+    <h4>대비비 (미리보기에 실제로 나타나는 FG/BG 쌍)</h4>
+    <ul class="contrast-list">
+      {contrast_rows}
+    </ul>
   </section>
 
   <details class="snippet">
@@ -144,11 +340,22 @@ _SWATCH = """
 <li class="swatch">
   <div class="chip" style="background:{hex_};{extra_style}"></div>
   <div class="chip-meta">
-    <div class="chip-role">{role}</div>
+    <div class="chip-role">{role}{derived_tag}</div>
     <div class="chip-name">{name}</div>
     <code class="chip-hex">{hex_upper}</code>
     <div class="chip-usage">{usage}</div>
   </div>
+</li>
+"""
+
+
+_CONTRAST_ROW = """
+<li class="contrast-row">
+  <div class="contrast-swatches">
+    <span class="contrast-chip" style="background:{bg};color:{fg};">Aa</span>
+  </div>
+  <div class="contrast-label">{pair}</div>
+  <span class="badge badge-{cls}">{text}</span>
 </li>
 """
 
@@ -251,6 +458,18 @@ _HTML = """<!doctype html>
   }}
   .chip-meta {{ display: grid; gap: 2px; font-size: 12px; }}
   .chip-role {{ font-weight: 600; }}
+  .chip-derived {{
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--shell-border);
+    color: var(--shell-muted);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+  }}
   .chip-name {{ color: var(--shell-muted); }}
   .chip-hex {{ font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px; }}
   .chip-usage {{ color: var(--shell-muted); font-size: 11px; }}
@@ -262,7 +481,7 @@ _HTML = """<!doctype html>
     color: var(--p-text);
     border-radius: 14px;
     padding: 22px 22px 20px;
-    border: 1px solid rgba(0,0,0,0.05);
+    border: 1px solid var(--p-border);
     min-height: 220px;
     display: flex;
     flex-direction: column;
@@ -272,19 +491,20 @@ _HTML = """<!doctype html>
     display: inline-block;
     align-self: flex-start;
     background: var(--p-primary);
-    color: var(--p-bg);
+    color: var(--p-on-primary);
     font-size: 11px;
     padding: 3px 10px;
     border-radius: 999px;
     margin-bottom: 4px;
+    font-weight: 600;
   }}
-  .sample-card h3 {{ margin: 0; font-size: 13px; opacity: 0.7; font-weight: 500; }}
-  .sample-amount {{ margin: 2px 0 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em; }}
-  .sample-sub {{ margin: 0; font-size: 12px; color: var(--p-secondary); }}
+  .sample-card h3 {{ margin: 0; font-size: 13px; color: var(--p-muted); font-weight: 500; }}
+  .sample-amount {{ margin: 2px 0 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em; color: var(--p-text); }}
+  .sample-sub {{ margin: 0; font-size: 12px; color: var(--p-muted); }}
   .sample-actions {{ margin-top: auto; display: flex; gap: 8px; }}
   .btn-primary {{
     background: var(--p-primary);
-    color: var(--p-bg);
+    color: var(--p-on-primary);
     border: none;
     padding: 10px 16px;
     border-radius: 10px;
@@ -296,7 +516,7 @@ _HTML = """<!doctype html>
   .btn-secondary {{
     background: transparent;
     color: var(--p-text);
-    border: 1px solid var(--p-secondary);
+    border: 1px solid var(--p-border);
     padding: 9px 16px;
     border-radius: 10px;
     font-size: 13px;
@@ -306,7 +526,7 @@ _HTML = """<!doctype html>
   }}
   .btn-danger {{
     background: var(--p-accent);
-    color: var(--p-bg);
+    color: var(--p-on-accent);
     border: none;
     padding: 10px 16px;
     border-radius: 10px;
@@ -319,7 +539,7 @@ _HTML = """<!doctype html>
     position: absolute;
     top: 18px; right: 18px;
     background: var(--p-accent);
-    color: var(--p-bg);
+    color: var(--p-on-accent);
     font-size: 10px;
     font-weight: 700;
     padding: 3px 8px;
@@ -327,7 +547,7 @@ _HTML = """<!doctype html>
     letter-spacing: 0.08em;
   }}
   .ticker-row {{ display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }}
-  .ticker-symbol {{ font-size: 11px; opacity: 0.6; font-weight: 600; letter-spacing: 0.06em; }}
+  .ticker-symbol {{ font-size: 11px; color: var(--p-muted); font-weight: 600; letter-spacing: 0.06em; }}
   .ticker-change {{ font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }}
   .ticker-change.up {{ color: var(--signal-up); }}
   .ticker-change.down {{ color: var(--signal-down); }}
@@ -339,18 +559,18 @@ _HTML = """<!doctype html>
     padding: 8px 10px;
     font-size: 11px;
     font-variant-numeric: tabular-nums;
-    color: var(--p-text);
+    color: var(--p-on-surface);
   }}
   .ob-row {{ display: flex; justify-content: space-between; padding: 2px 0; }}
   .ob-row.sell .ob-px {{ color: var(--signal-down); }}
   .ob-row.buy  .ob-px {{ color: var(--signal-up); }}
-  .ob-amt {{ opacity: 0.65; }}
+  .ob-amt {{ color: var(--p-muted); }}
   .ob-spread {{
     text-align: center;
     padding: 4px 0;
     margin: 2px -10px;
     font-size: 10px;
-    opacity: 0.55;
+    color: var(--p-muted);
     border-top: 1px solid var(--shell-fade);
     border-bottom: 1px solid var(--shell-fade);
   }}
@@ -363,26 +583,50 @@ _HTML = """<!doctype html>
     border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; flex: 1;
   }}
   .mini-chart {{ width: 100%; height: 36px; margin: 4px 0 8px; }}
-  .session-time {{ font-size: 11px; opacity: 0.6; }}
-  .session-title {{ margin: 4px 0 2px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }}
-  .session-meta {{ display: flex; gap: 8px; font-size: 11px; opacity: 0.65; }}
+  .session-time {{ font-size: 11px; color: var(--p-muted); }}
+  .session-title {{ margin: 4px 0 2px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--p-text); }}
+  .session-meta {{ display: flex; gap: 8px; font-size: 11px; color: var(--p-muted); }}
   .session-meta span::before {{ content: "·"; margin-right: 6px; opacity: 0.5; }}
   .session-meta span:first-child::before {{ content: none; margin: 0; }}
-  .menu-item {{ display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px dashed rgba(0,0,0,0.08); }}
+  .menu-item {{ display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px dashed var(--p-border); color: var(--p-text); }}
   .menu-item:last-child {{ border-bottom: none; }}
-  .menu-item .price {{ opacity: 0.7; font-variant-numeric: tabular-nums; }}
-  .metric-label {{ font-size: 12px; opacity: 0.6; }}
-  .metric-value {{ font-size: 24px; font-weight: 700; letter-spacing: -0.01em; margin: 2px 0 0; }}
+  .menu-item .price {{ color: var(--p-muted); font-variant-numeric: tabular-nums; }}
+  .metric-label {{ font-size: 12px; color: var(--p-muted); }}
+  .metric-value {{ font-size: 24px; font-weight: 700; letter-spacing: -0.01em; margin: 2px 0 0; color: var(--p-text); }}
   .product-img {{ width: 100%; height: 70px; border-radius: 8px; background: linear-gradient(135deg, var(--p-secondary), var(--p-primary)); opacity: 0.4; margin-bottom: 6px; }}
+  .progress-track {{ height: 6px; background: var(--p-surface); border-radius: 3px; margin: 8px 0 4px; overflow: hidden; }}
+  .progress-fill {{ height: 100%; background: var(--p-primary); border-radius: 3px; }}
 
-  .contrast h4 {{ margin: 0 0 8px; font-size: 12px; color: var(--shell-muted); font-weight: 500; }}
+  .contrast h4 {{ margin: 0 0 10px; font-size: 12px; color: var(--shell-muted); font-weight: 500; }}
+  .contrast-list {{ margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }}
+  .contrast-row {{
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+  }}
+  .contrast-chip {{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 24px;
+    border-radius: 6px;
+    border: 1px solid var(--shell-border);
+    font-size: 11px;
+    font-weight: 700;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }}
+  .contrast-label {{ color: var(--shell-fg); }}
   .badge {{
     display: inline-block;
-    padding: 4px 10px;
+    padding: 3px 8px;
     border-radius: 999px;
-    font-size: 11px;
+    font-size: 10px;
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
-    font-weight: 600;
+    font-weight: 700;
+    white-space: nowrap;
   }}
   .badge-pass {{ background: #E5F6EA; color: #137333; }}
   .badge-warn {{ background: #FEF3C7; color: #92400E; }}
@@ -423,33 +667,37 @@ _HTML = """<!doctype html>
 
 # ---------- Builders ----------
 
-def _color_by_role(colors: list[dict], role: str) -> dict | None:
-    for c in colors:
-        if c.get("role", "").lower() == role.lower():
-            return c
-    return None
+_CSS_VAR_ORDER = [
+    ("primary",   "--color-primary"),
+    ("secondary", "--color-secondary"),
+    ("accent",    "--color-accent"),
+    ("surface",   "--color-surface"),
+    ("background","--color-bg"),
+    ("text",      "--color-text"),
+    ("muted",     "--color-muted"),
+    ("border",    "--color-border"),
+]
 
 
-def _css_snippet(palette: dict) -> str:
-    role_to_var = {
-        "Primary": "--color-primary",
-        "Secondary": "--color-secondary",
-        "Accent": "--color-accent",
-        "Background": "--color-bg",
-        "Text": "--color-text",
-    }
+def _css_snippet(resolved: dict, original_colors: list[dict]) -> str:
+    """Emit CSS variables for every role present in the user's palette
+    (skipping derived ones — but always emitting the on-color tokens, since
+    those are the answer to 'what color should this button's text be')."""
+    explicit_roles = {c["role"].lower() for c in original_colors}
     lines = []
-    for role, var in role_to_var.items():
-        c = _color_by_role(palette["colors"], role)
-        if c:
-            lines.append(f"{var}: {c['hex'].upper()};")
+    for key, var in _CSS_VAR_ORDER:
+        if key in explicit_roles or key in ("primary", "background", "text"):
+            lines.append(f"{var}: {resolved[key].upper()};")
+    # always include on-color tokens — they're the practical answer for button
+    # / badge / surface text, regardless of palette size.
+    lines.append(f"--color-on-primary: {resolved['on_primary'].upper()};")
+    if resolved["accent"].lower() != resolved["primary"].lower():
+        lines.append(f"--color-on-accent: {resolved['on_accent'].upper()};")
     return "\n".join(lines)
 
 
 def _render_swatches(palette: dict) -> str:
     pieces = []
-    bg = _color_by_role(palette["colors"], "Background")
-    bg_hex = bg["hex"] if bg else "#FFFFFF"
     for c in palette["colors"]:
         # for the Text swatch, paint a thin border so very-dark chips don't disappear
         extra = ""
@@ -459,6 +707,7 @@ def _render_swatches(palette: dict) -> str:
             hex_=c["hex"],
             extra_style=extra,
             role=c["role"],
+            derived_tag="",
             name=c.get("name", ""),
             hex_upper=c["hex"].upper(),
             usage=c.get("usage", ""),
@@ -517,11 +766,24 @@ _SAMPLE_TEMPLATES = {
   <p class="session-time">5분 · 호흡</p>
   <h2 class="session-title">출근길 마음 가다듬기</h2>
   <div class="session-meta"><span>레벨 1</span><span>3,128명 함께</span></div>
-  <p class="sample-sub" style="margin-top:10px;opacity:0.7;">"지금 이 순간에 머무르세요"</p>
+  <p class="sample-sub" style="margin-top:10px;">"지금 이 순간에 머무르세요"</p>
   <div class="sample-actions">
     <button class="btn-primary">▶ 시작하기</button>
     <button class="btn-secondary">나중에</button>
   </div>
+</div>""",
+    "fitness": """<div class="sample-card">
+  <div class="sample-pill">오늘의 운동</div>
+  <p class="session-time">42분 · 상체 + 코어</p>
+  <h2 class="session-title">Push Day · Upper Power</h2>
+  <div class="session-meta"><span>난이도 중상</span><span>520 kcal</span><span>8개 동작</span></div>
+  <div class="progress-track"><div class="progress-fill" style="width:34%;"></div></div>
+  <p class="sample-sub">이번 주 4회 중 2회 완료 · 스트릭 12일 🔥</p>
+  <div class="sample-actions">
+    <button class="btn-primary">▶ 시작하기</button>
+    <button class="btn-secondary">루틴 보기</button>
+  </div>
+  <span class="sample-badge">PR</span>
 </div>""",
     "fnb": """<div class="sample-card">
   <div class="sample-pill">오늘의 도시락</div>
@@ -553,9 +815,7 @@ _SAMPLE_TEMPLATES = {
   <div class="sample-pill">진행 중인 강의</div>
   <h2 class="session-title" style="font-size:17px;">자료구조와 알고리즘</h2>
   <p class="sample-sub">Chapter 5. 그래프 탐색</p>
-  <div style="height:6px;background:rgba(0,0,0,0.08);border-radius:3px;margin:8px 0 4px;">
-    <div style="height:100%;width:62%;background:var(--p-primary);border-radius:3px;"></div>
-  </div>
+  <div class="progress-track"><div class="progress-fill" style="width:62%;"></div></div>
   <p class="sample-sub">62% 완료 · 다음 강의 8분</p>
   <div class="sample-actions">
     <button class="btn-primary">이어 학습</button>
@@ -592,6 +852,8 @@ def _infer_sample_type(service: str, context: str) -> str:
     # crypto comes before generic fintech so the gold/ticker reading wins
     if any(k in hint for k in ["가상자산", "코인", "크립토", "비트코인", "거래소", "crypto", "bitcoin", "exchange", "web3", "nft"]):
         return "crypto"
+    if any(k in hint for k in ["피트니스", "운동", "헬스장", "워크아웃", "트레이닝", "근력", "유산소", "fitness", "workout", "gym", "training", "exercise"]):
+        return "fitness"
     if any(k in hint for k in ["명상", "마음챙김", "meditation", "mindful", "수면", "휴식", "웰니스", "wellness"]):
         return "meditation"
     if any(k in hint for k in ["배달", "도시락", "푸드", "음식", "맛집", "주문", "food", "delivery", "restaurant", "f&b", "fnb"]):
@@ -611,7 +873,9 @@ def _cta_label(domain_hint: str) -> str:
     hint = (domain_hint or "").lower()
     if any(k in hint for k in ["핀테크", "은행", "투자", "자산", "금융"]):
         return "송금하기"
-    if any(k in hint for k in ["헬스", "명상", "운동", "건강"]):
+    if any(k in hint for k in ["피트니스", "운동", "워크아웃", "트레이닝"]):
+        return "운동 시작"
+    if any(k in hint for k in ["헬스", "명상", "건강"]):
         return "시작하기"
     if any(k in hint for k in ["커머스", "쇼핑", "이커머스", "마켓"]):
         return "구매하기"
@@ -638,24 +902,20 @@ def render(data: dict) -> str:
     sample_card_html = _build_sample_card(sample_type, service, cta)
 
     cards = []
+    all_bg_dark = True
     for idx, p in enumerate(palettes, start=1):
-        bg = _color_by_role(p["colors"], "Background")
-        text = _color_by_role(p["colors"], "Text")
-        if not bg or not text:
-            raise ValueError(
-                f"팔레트 '{p.get('name', '?')}'에 Background 또는 Text 역할이 없습니다."
-            )
-        primary = _color_by_role(p["colors"], "Primary") or bg
-        secondary = _color_by_role(p["colors"], "Secondary") or text
-        accent = _color_by_role(p["colors"], "Accent") or primary
-
-        ratio = contrast_ratio(text["hex"], bg["hex"])
-        label, css_class = wcag_label(ratio)
-
-        bg_lum = _relative_luminance(bg["hex"])
+        r = resolve_palette(p)
+        bg_lum = _relative_luminance(r["background"])
         is_dark_bg = bg_lum < 0.2
+        all_bg_dark = all_bg_dark and is_dark_bg
         shell_fade = "rgba(255,255,255,0.08)" if is_dark_bg else "rgba(0,0,0,0.08)"
-        surface = derive_surface(bg["hex"])
+
+        contrast_rows_html = "\n".join(
+            _CONTRAST_ROW.format(
+                pair=row["pair"], fg=row["fg"], bg=row["bg"],
+                text=row["text"], cls=row["class"],
+            ) for row in build_contrast_report(r)
+        )
 
         cards.append(_PALETTE_CARD.format(
             idx=idx,
@@ -665,22 +925,24 @@ def render(data: dict) -> str:
             target_fit=p.get("target_fit", ""),
             rationale=p.get("rationale", ""),
             swatches=_render_swatches(p),
-            primary=primary["hex"],
-            secondary=secondary["hex"],
-            accent=accent["hex"],
-            bg=bg["hex"],
-            text=text["hex"],
-            surface=surface,
+            primary=r["primary"],
+            secondary=r["secondary"],
+            accent=r["accent"],
+            surface=r["surface"],
+            bg=r["background"],
+            text=r["text"],
+            muted=r["muted"],
+            border=r["border"],
+            on_primary=r["on_primary"],
+            on_accent=r["on_accent"],
+            on_surface=r["on_surface"],
             shell_fade=shell_fade,
             sample_card=sample_card_html,
-            contrast_class=css_class,
-            contrast_label=label,
-            css_snippet=_css_snippet(p),
+            contrast_rows=contrast_rows_html,
+            css_snippet=_css_snippet(r, p.get("colors", [])),
         ))
 
-    # Determine shell mode: dark if all palette BGs are dark
-    all_dark = all(_relative_luminance(_color_by_role(p["colors"], "Background")["hex"]) < 0.2 for p in palettes)
-    shell_mode = "dark" if all_dark else "light"
+    shell_mode = "dark" if all_bg_dark else "light"
 
     return _HTML.format(
         service=service,
@@ -699,16 +961,20 @@ def main() -> int:
     data = json.loads(Path(args.input).read_text(encoding="utf-8"))
     html = render(data)
     Path(args.output).write_text(html, encoding="utf-8")
-    # also print a small validation report
+
     palettes = data.get("palettes", [])
     print(f"✓ Generated {args.output} with {len(palettes)} palette(s).")
+    has_fail = False
     for p in palettes:
-        bg = _color_by_role(p["colors"], "Background")
-        text = _color_by_role(p["colors"], "Text")
-        if bg and text:
-            r = contrast_ratio(text["hex"], bg["hex"])
-            label, _ = wcag_label(r)
-            print(f"  · {p.get('name', '?')}: Text/Background contrast = {label}")
+        r = resolve_palette(p)
+        print(f"  · {p.get('name', '?')}:")
+        for row in build_contrast_report(r):
+            marker = "✓" if row["class"] == "pass" else ("⚠" if row["class"] == "warn" else "✗")
+            if row["class"] == "fail":
+                has_fail = True
+            print(f"      {marker} {row['pair']:<24} {row['text']}")
+    if has_fail:
+        print("\n⚠ 일부 FG/BG 쌍이 WCAG AA(4.5:1)에 미달합니다. 팔레트를 조정하거나 on-color 토큰을 명시하세요.")
     return 0
 
 
