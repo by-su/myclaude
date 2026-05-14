@@ -102,3 +102,6 @@ coverage/
 .claude/settings.local.json
 .claude/worktrees/
 .claire/
+
+# skill-creator eval / iteration 산출물 (LLM 출력은 비결정적이라 diff 의미 없음, 로컬에만 보관)
+skills/*-workspace/
