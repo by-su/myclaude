@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SnapFolio — 캡처만 올리면 포트폴리오 완성</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #9DC840;
+      --green-light: #C8E87A;
+      --green-pale: #F0F9D8;
+      --black: #0D0D0D;
+      --gray-dark: #3A3A3A;
+      --gray: #767676;
+      --gray-light: #E8E8E8;
+      --white: #FFFFFF;
+      --bg: #FAFAFA;
+      --radius: 16px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.08);
+      --shadow-lg: 0 12px 48px rgba(0,0,0,0.12);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--black);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Step System ── */
+    .step { display: none; opacity: 0; transition: opacity 0.4s ease; }
+    .step.active { display: block; opacity: 1; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .step.active { animation: fadeIn 0.45s ease forwards; }
+
+    /* ── Topbar ── */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 32px;
+      background: rgba(250,250,250,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--gray-light);
+    }
+    .logo {
+      font-family: 'Archivo', sans-serif;
+      font-weight: 900; font-size: 20px; letter-spacing: -0.5px;
+      color: var(--black);
+    }
+    .logo span { color: var(--green); }
+    .step-indicator {
+      display: flex; gap: 8px; align-items: center;
+    }
+    .step-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--gray-light); transition: all 0.3s;
+    }
+    .step-dot.done { background: var(--green); }
+    .step-dot.active { background: var(--black); width: 24px; border-radius: 4px; }
+
+    /* ── STEP 1: Upload ── */
+    #step1 {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 100px 24px 60px;
+    }
+    .upload-headline {
+      font-family: 'Archivo', sans-serif;
+      font-size: clamp(36px, 6vw, 72px);
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -2px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .upload-headline .hl {
+      position: relative; display: inline-block;
+    }
+    .upload-headline .hl::after {
+      content: '';
+      position: absolute; bottom: 2px; left: 0; right: 0;
+      height: 10px;
+      background: var(--green-light);
+      z-index: -1;
+      border-radius: 3px;
+    }
+    .upload-sub {
+      font-size: 18px; color: var(--gray); text-align: center;
+      margin-bottom: 48px; max-width: 480px;
+    }
+
+    /* Drop Zone */
+    .dropzone {
+      width: 100%; max-width: 640px;
+      border: 2px dashed var(--gray-light);
+      border-radius: 24px;
+      padding: 56px 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      background: var(--white);
+      position: relative;
+    }
+    .dropzone:hover, .dropzone.drag-over {
+      border-color: var(--green);
+      background: var(--green-pale);
+    }
+    .dropzone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .dz-icon {
+      width: 56px; height: 56px; margin: 0 auto 16px;
+      background: var(--green-pale); border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .dz-icon svg { width: 28px; height: 28px; stroke: var(--green); }
+    .dz-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+    .dz-sub { font-size: 14px; color: var(--gray); }
+
+    /* Preview grid */
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+      width: 100%; max-width: 640px;
+      margin-top: 24px;
+    }
+    .preview-item {
+      position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden;
+      border: 2px solid var(--gray-light);
+      animation: fadeIn 0.3s ease;
+    }
+    .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+    .preview-item .remove-btn {
+      position: absolute; top: 4px; right: 4px;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: rgba(0,0,0,0.6); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 12px; line-height: 1;
+    }
+    .preview-item:first-child { border-color: var(--green); }
+    .preview-item:first-child::before {
+      content: 'HERO';
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: var(--green); color: white;
+      font-size: 9px; font-weight: 700; letter-spacing: 1px;
+      text-align: center; padding: 3px 0;
+    }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--black); color: var(--white);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px; font-weight: 600;
+      padding: 16px 36px; border-radius: 100px;
+      border: none; cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 32px;
+    }
+    .btn-primary:hover { background: var(--gray-dark); transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .btn-primary svg { width: 18px; height: 18px; }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent; color: var(--black);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px; font-weight: 500;
+      padding: 14px 28px; border-radius: 100px;
+      border: 2px solid var(--gray-light); cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-secondary:hover { border-color: var(--black); }
+
+    /* ── STEP 2: Form ── */
+    #step2 {
+      min-height: 100vh;
+      padding: 100px 24px 60px;
+      max-width: 720px; margin: 0 auto;
+    }
+    .form-headline {
+      font-family: 'Archivo', sans-serif;
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 900; letter-spacing: -1.5px;
+      margin-bottom: 8px;
+    }
+    .form-sub { color: var(--gray); font-size: 16px; margin-bottom: 40px; }
+    .form-group { margin-bottom: 28px; }
+    .form-label {
+      display: block; font-size: 13px; font-weight: 600;
+      letter-spacing: 0.5px; text-transform: uppercase;
+      color: var(--gray); margin-bottom: 8px;
+    }
+    .form-input, .form-textarea {
+      width: 100%; padding: 14px 18px;
+      border: 2px solid var(--gray-light);
+      border-radius: 12px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px; color: var(--black);
+      background: var(--white);
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .form-input:focus, .form-textarea:focus { border-color: var(--green); }
+    .form-textarea { min-height: 110px; resize: vertical; }
+
+    /* Device select */
+    .device-options { display: flex; gap: 12px; flex-wrap: wrap; }
+    .device-opt {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 18px 24px; border: 2px solid var(--gray-light);
+      border-radius: 16px; cursor: pointer; transition: all 0.2s;
+      background: var(--white); min-width: 100px;
+    }
+    .device-opt:hover { border-color: var(--green); }
+    .device-opt.selected { border-color: var(--green); background: var(--green-pale); }
+    .device-opt svg { width: 36px; height: 36px; }
+    .device-opt span { font-size: 13px; font-weight: 600; }
+
+    /* Tag input */
+    .tag-container {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      padding: 10px 14px; border: 2px solid var(--gray-light);
+      border-radius: 12px; background: var(--white); cursor: text;
+      min-height: 50px; transition: border-color 0.2s;
+    }
+    .tag-container:focus-within { border-color: var(--green); }
+    .tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--green-pale); color: var(--black);
+      padding: 4px 12px; border-radius: 100px;
+      font-size: 13px; font-weight: 500;
+    }
+    .tag .tag-remove { cursor: pointer; font-size: 14px; color: var(--gray); }
+    .tag-input-inner {
+      border: none; outline: none; font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px; flex: 1; min-width: 120px; background: transparent;
+    }
+    .tag-hint { font-size: 12px; color: var(--gray); margin-top: 4px; }
+
+    /* Timeline builder */
+    .timeline-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .timeline-col h4 {
+      font-size: 14px; font-weight: 700; margin-bottom: 10px;
+      padding-bottom: 8px; border-bottom: 2px solid var(--gray-light);
+    }
+    .timeline-col .form-input { margin-bottom: 8px; font-size: 13px; padding: 8px 12px; }
+    .timeline-col .add-item-btn {
+      font-size: 12px; color: var(--green); font-weight: 600;
+      cursor: pointer; background: none; border: none;
+      padding: 4px 0;
+    }
+    .timeline-items { display: flex; flex-direction: column; gap: 6px; }
+    .timeline-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--bg); border: 1px solid var(--gray-light);
+      border-radius: 8px; padding: 6px 10px; font-size: 12px;
+    }
+    .timeline-tag .rm { cursor: pointer; color: var(--gray); font-size: 11px; }
+
+    .form-actions { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+
+    /* ── STEP 3: Portfolio Result ── */
+    #step3 { padding-top: 72px; }
+
+    /* Action bar */
+    .action-bar {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 12px; align-items: center;
+      background: var(--black); color: white;
+      padding: 12px 20px; border-radius: 100px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      z-index: 200;
+    }
+    .action-btn {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.12); border: none; color: white;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; font-weight: 500;
+      padding: 8px 16px; border-radius: 100px; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .action-btn:hover { background: rgba(255,255,255,0.2); }
+    .action-btn.primary-action {
+      background: var(--green); color: var(--black); font-weight: 700;
+    }
+    .action-btn.primary-action:hover { background: var(--green-light); }
+    .action-btn svg { width: 15px; height: 15px; }
+    .action-sep { width: 1px; height: 20px; background: rgba(255,255,255,0.2); }
+
+    /* HERO SECTION */
+    .portfolio-hero {
+      position: relative; height: 70vh; min-height: 500px;
+      overflow: hidden; display: flex; align-items: flex-end;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background: #1a1a1a;
+    }
+    .hero-bg img {
+      width: 100%; height: 100%; object-fit: cover; opacity: 0.55;
+    }
+    .hero-gradient {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.6) 100%);
+    }
+    .hero-content {
+      position: relative; z-index: 2;
+      width: 100%; display: flex;
+      align-items: flex-end; justify-content: space-between;
+      padding: 40px 60px 60px;
+      gap: 40px;
+    }
+    .hero-text { color: white; max-width: 480px; }
+    .hero-text h1 {
+      font-family: 'Archivo', sans-serif;
+      font-size: clamp(32px, 5vw, 60px);
+      font-weight: 900; letter-spacing: -2px;
+      line-height: 1.05; margin-bottom: 12px;
+    }
+    .hero-text p { font-size: 16px; opacity: 0.8; max-width: 380px; line-height: 1.6; }
+
+    /* Phone Mockup */
+    .phone-mockup {
+      flex-shrink: 0; position: relative;
+      width: 220px; transform: translateY(60px);
+    }
+    .phone-frame {
+      width: 220px; background: #1a1a1a;
+      border-radius: 44px;
+      padding: 12px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.1);
+    }
+    .phone-notch {
+      width: 80px; height: 24px; background: #1a1a1a;
+      border-radius: 0 0 16px 16px;
+      margin: 0 auto 6px;
+      position: relative; z-index: 10;
+    }
+    .phone-screen {
+      border-radius: 34px; overflow: hidden;
+      background: #000;
+      aspect-ratio: 9/19.5;
+    }
+    .phone-screen img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Tablet Mockup */
+    .tablet-mockup {
+      flex-shrink: 0; position: relative;
+      width: 280px; transform: translateY(40px);
+    }
+    .tablet-frame {
+      width: 280px; background: #2a2a2a;
+      border-radius: 24px; padding: 16px 12px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+    }
+    .tablet-screen {
+      border-radius: 12px; overflow: hidden;
+      background: #000; aspect-ratio: 4/3;
+    }
+    .tablet-screen img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Browser Mockup */
+    .browser-mockup {
+      flex-shrink: 0; position: relative;
+      width: 360px; transform: translateY(40px);
+    }
+    .browser-frame {
+      background: #1e1e1e; border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+    }
+    .browser-bar {
+      height: 36px; background: #2d2d2d;
+      display: flex; align-items: center; padding: 0 14px; gap: 6px;
+    }
+    .browser-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .browser-screen { aspect-ratio: 16/10; overflow: hidden; }
+    .browser-screen img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* ABOUT SECTION */
+    .about-section {
+      padding: 80px 60px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 60px;
+      align-items: center;
+    }
+    .section-eyebrow {
+      font-size: 12px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--gray); margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: 'Archivo', sans-serif;
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 900; letter-spacing: -1.5px;
+      line-height: 1.1; margin-bottom: 24px;
+    }
+    .hl-green {
+      position: relative; display: inline-block;
+    }
+    .hl-green::after {
+      content: '';
+      position: absolute; bottom: 1px; left: -3px; right: -3px;
+      height: 9px; background: var(--green-light);
+      z-index: -1; border-radius: 3px;
+    }
+    .about-description {
+      font-size: 16px; line-height: 1.8; color: var(--gray-dark);
+    }
+    .skill-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+    .skill-tag {
+      padding: 6px 16px; border-radius: 100px;
+      font-size: 13px; font-weight: 500;
+      background: transparent;
+      border: 1.5px solid var(--gray-light);
+      color: var(--gray-dark);
+      transition: all 0.2s;
+    }
+    .skill-tag:hover { border-color: var(--green); background: var(--green-pale); }
+
+    /* WHAT COVERED SECTION */
+    .covered-section {
+      padding: 80px 60px;
+      background: var(--white);
+    }
+    .covered-header {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 40px;
+      align-items: start; margin-bottom: 60px;
+    }
+    .covered-header p {
+      font-size: 15px; color: var(--gray); line-height: 1.7;
+      margin-top: 8px;
+    }
+    .timeline-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;
+    }
+    .timeline-item { text-align: center; }
+    .timeline-item-title {
+      font-size: 16px; font-weight: 700; margin-bottom: 6px;
+    }
+    .timeline-duration {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 20px;
+    }
+    .timeline-line { flex: 1; height: 1px; background: var(--gray-light); }
+    .timeline-duration span { font-size: 12px; color: var(--gray); white-space: nowrap; }
+    .timeline-tasks { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .timeline-task {
+      padding: 6px 14px; border: 1.5px solid var(--gray-light);
+      border-radius: 8px; font-size: 13px; color: var(--gray-dark);
+    }
+
+    /* GALLERY SECTION */
+    .gallery-section { padding: 80px 60px; }
+    .gallery-grid { display: grid; gap: 24px; margin-top: 40px; }
+    .gallery-item {
+      display: grid; align-items: center; gap: 32px;
+    }
+    .gallery-item:nth-child(odd) { grid-template-columns: 3fr 2fr; }
+    .gallery-item:nth-child(even) { grid-template-columns: 2fr 3fr; direction: rtl; }
+    .gallery-item:nth-child(even) > * { direction: ltr; }
+    .gallery-img {
+      border-radius: 20px; overflow: hidden;
+      aspect-ratio: 4/3;
+    }
+    .gallery-img img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-text-card {
+      padding: 32px; background: var(--white);
+      border-radius: 20px; box-shadow: var(--shadow);
+    }
+    .gallery-text-card h3 {
+      font-family: 'Archivo', sans-serif;
+      font-size: 24px; font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px; position: relative; display: inline-block;
+    }
+    .gallery-text-card h3.user-pains::after,
+    .gallery-text-card h3.solutions::after {
+      content: '';
+      position: absolute; bottom: 1px; left: -3px; right: -3px;
+      height: 8px; background: var(--green-light);
+      z-index: -1; border-radius: 2px;
+    }
+    .gallery-text-card ul { list-style: none; }
+    .gallery-text-card ul li {
+      font-size: 14px; color: var(--gray-dark); line-height: 1.7;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--gray-light);
+      display: flex; align-items: baseline; gap: 6px;
+    }
+    .gallery-text-card ul li:last-child { border-bottom: none; }
+
+    /* Editable card */
+    .edit-card-btn {
+      display: flex; align-items: center; gap: 5px;
+      background: none; border: 1.5px solid var(--gray-light);
+      border-radius: 100px; padding: 4px 12px;
+      font-size: 11px; font-weight: 600; color: var(--gray);
+      cursor: pointer; margin-bottom: 14px;
+      transition: all 0.2s; letter-spacing: 0.3px;
+    }
+    .edit-card-btn:hover { border-color: var(--green); color: var(--black); background: var(--green-pale); }
+    .edit-card-btn svg { width: 11px; height: 11px; }
+    .card-title-edit {
+      font-family: 'Archivo', sans-serif;
+      font-size: 24px; font-weight: 800; letter-spacing: -0.5px;
+      border: none; outline: none; background: transparent;
+      width: 100%; color: var(--black);
+      border-bottom: 2px solid var(--green);
+      margin-bottom: 14px; padding-bottom: 4px;
+    }
+    .li-text[contenteditable="true"] {
+      outline: none; flex: 1;
+      border-bottom: 1.5px dashed var(--green-light);
+      min-width: 40px;
+    }
+    .li-del {
+      cursor: pointer; color: var(--gray-light);
+      font-size: 13px; flex-shrink: 0;
+      transition: color 0.15s;
+      background: none; border: none; padding: 0 2px;
+    }
+    .li-del:hover { color: #e05; }
+    .add-li-btn {
+      display: flex; align-items: center; gap: 5px;
+      background: none; border: none;
+      font-size: 12px; font-weight: 600; color: var(--green);
+      cursor: pointer; padding: 6px 0; margin-top: 4px;
+    }
+    .card-editing .edit-card-btn { border-color: var(--green); color: var(--green); background: var(--green-pale); }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--black); color: white;
+      padding: 12px 24px; border-radius: 100px;
+      font-size: 14px; font-weight: 500;
+      opacity: 0; transition: all 0.3s ease;
+      pointer-events: none; z-index: 300; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Loading */
+    .generating-overlay {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 500;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .generating-overlay.show { opacity: 1; pointer-events: all; }
+    .generating-text {
+      font-family: 'Archivo', sans-serif;
+      font-size: 32px; font-weight: 900; letter-spacing: -1px;
+      margin-top: 24px;
+    }
+    .generating-sub { color: var(--gray); font-size: 15px; margin-top: 8px; }
+    .progress-bar-wrap {
+      width: 240px; height: 3px;
+      background: var(--gray-light); border-radius: 2px;
+      margin-top: 24px; overflow: hidden;
+    }
+    .progress-bar-inner {
+      height: 100%; background: var(--green);
+      border-radius: 2px; width: 0;
+      transition: width 0.3s ease;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .topbar { padding: 14px 20px; }
+      .hero-content { flex-direction: column; align-items: flex-start; padding: 24px; }
+      .phone-mockup, .tablet-mockup, .browser-mockup { display: none; }
+      .about-section { grid-template-columns: 1fr; padding: 48px 24px; gap: 32px; }
+      .covered-section { padding: 48px 24px; }
+      .covered-header { grid-template-columns: 1fr; gap: 16px; }
+      .timeline-row { grid-template-columns: 1fr; }
+      .gallery-section { padding: 48px 24px; }
+      .gallery-item:nth-child(odd),
+      .gallery-item:nth-child(even) { grid-template-columns: 1fr; direction: ltr; }
+      .timeline-grid { grid-template-columns: 1fr; }
+      #step1, #step2 { padding: 90px 20px 60px; }
+      .action-bar { bottom: 16px; left: 16px; right: 16px; transform: none; justify-content: center; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .step.active, * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Topbar ── -->
+<nav class="topbar" aria-label="메인 네비게이션">
+  <div class="logo">Snap<span>Folio</span></div>
+  <div class="step-indicator" role="status" aria-label="진행 단계">
+    <div class="step-dot active" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+    <div class="step-dot" id="dot3"></div>
+  </div>
+</nav>
+
+<!-- ── Generating Overlay ── -->
+<div class="generating-overlay" id="generatingOverlay" role="status" aria-live="polite">
+  <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+    <circle cx="24" cy="24" r="20" stroke="#E8E8E8" stroke-width="4"/>
+    <path d="M24 4 A20 20 0 0 1 44 24" stroke="#9DC840" stroke-width="4" stroke-linecap="round">
+      <animateTransform attributeName="transform" type="rotate" from="0 24 24" to="360 24 24" dur="0.8s" repeatCount="indefinite"/>
+    </path>
+  </svg>
+  <p class="generating-text">생성 중...</p>
+  <p class="generating-sub">포트폴리오를 조립하고 있어요</p>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-inner" id="progressBar"></div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div class="toast" id="toast" role="alert"></div>
+
+<!-- ══════════════════════════════════
+     STEP 1: Upload
+══════════════════════════════════ -->
+<section id="step1" class="step active" aria-label="이미지 업로드">
+  <h1 class="upload-headline">
+    캡처만 올리면<br><span class="hl">포트폴리오</span> 완성
+  </h1>
+  <p class="upload-sub">스크린샷이나 작업물 이미지를 올려주세요. 나머지는 자동으로 만들어드립니다.</p>
+
+  <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="이미지 업로드 영역. 클릭하거나 파일을 드래그 앤 드롭하세요.">
+    <input type="file" id="fileInput" accept="image/*" multiple aria-label="이미지 파일 선택" />
+    <div class="dz-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+    </div>
+    <p class="dz-title">여기에 이미지를 드롭하세요</p>
+    <p class="dz-sub">또는 클릭해서 파일 선택 • 최대 10장</p>
+  </div>
+
+  <div class="preview-grid" id="previewGrid" aria-label="업로드된 이미지 미리보기"></div>
+
+  <button class="btn-primary" id="step1Next" disabled aria-label="다음 단계로">
+    다음: 프로젝트 정보
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M5 12h14M12 5l7 7-7 7"/>
+    </svg>
+  </button>
+</section>
+
+<!-- ══════════════════════════════════
+     STEP 2: Form
+══════════════════════════════════ -->
+<section id="step2" class="step" aria-label="프로젝트 정보 입력">
+  <h2 class="form-headline">프로젝트 정보</h2>
+  <p class="form-sub">간단하게 입력하면 자동으로 케이스 스터디가 완성됩니다.</p>
+
+  <form id="portfolioForm" novalidate>
+    <!-- 프로젝트명 -->
+    <div class="form-group">
+      <label class="form-label" for="projectName">프로젝트 이름</label>
+      <input type="text" class="form-input" id="projectName" placeholder="예: SkinCare Daily App" required />
+    </div>
+
+    <!-- 설명 -->
+    <div class="form-group">
+      <label class="form-label" for="projectDesc">프로젝트 설명</label>
+      <textarea class="form-textarea" id="projectDesc" placeholder="이 프로젝트는 어떤 문제를 해결하나요? 무엇을 만들었나요?" required></textarea>
+    </div>
+
+    <!-- 디바이스 -->
+    <div class="form-group">
+      <label class="form-label">디바이스 유형</label>
+      <div class="device-options" role="radiogroup" aria-label="디바이스 유형 선택">
+        <div class="device-opt selected" data-device="mobile" role="radio" aria-checked="true" tabindex="0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0D0D0D" stroke-width="1.5" aria-hidden="true">
+            <rect x="5" y="2" width="14" height="20" rx="3"/>
+            <circle cx="12" cy="17" r="1"/>
+          </svg>
+          <span>모바일</span>
+        </div>
+        <div class="device-opt" data-device="tablet" role="radio" aria-checked="false" tabindex="0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0D0D0D" stroke-width="1.5" aria-hidden="true">
+            <rect x="4" y="2" width="16" height="20" rx="2"/>
+            <circle cx="12" cy="17.5" r="0.8"/>
+          </svg>
+          <span>태블릿</span>
+        </div>
+        <div class="device-opt" data-device="web" role="radio" aria-checked="false" tabindex="0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0D0D0D" stroke-width="1.5" aria-hidden="true">
+            <rect x="2" y="4" width="20" height="14" rx="2"/>
+            <path d="M8 20h8M12 18v2"/>
+          </svg>
+          <span>웹/앱</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 스킬 태그 -->
+    <div class="form-group">
+      <label class="form-label">스킬 / 기술 태그</label>
+      <div class="tag-container" id="tagContainer" role="group" aria-label="스킬 태그 입력">
+        <input type="text" class="tag-input-inner" id="tagInput" placeholder="태그 입력 후 Enter..." aria-label="스킬 태그 입력" />
+      </div>
+      <p class="tag-hint">Enter 또는 쉼표로 태그 추가. 예: UX/UI Design, Prototyping, React</p>
+    </div>
+
+    <!-- What Covered -->
+    <div class="form-group">
+      <label class="form-label">프로젝트 범위 (선택)</label>
+      <div class="timeline-grid" id="timelineGrid">
+        <div class="timeline-col">
+          <h4>Planning</h4>
+          <input type="text" class="form-input" placeholder="기간 (예: 1 week)" data-phase="planning" data-field="duration" />
+          <div class="timeline-items" id="planning-items"></div>
+          <button type="button" class="add-item-btn" data-phase="planning">+ 항목 추가</button>
+        </div>
+        <div class="timeline-col">
+          <h4>Discovery</h4>
+          <input type="text" class="form-input" placeholder="기간 (예: 2 weeks)" data-phase="discovery" data-field="duration" />
+          <div class="timeline-items" id="discovery-items"></div>
+          <button type="button" class="add-item-btn" data-phase="discovery">+ 항목 추가</button>
+        </div>
+        <div class="timeline-col">
+          <h4>Solution</h4>
+          <input type="text" class="form-input" placeholder="기간 (예: 4 weeks)" data-phase="solution" data-field="duration" />
+          <div class="timeline-items" id="solution-items"></div>
+          <button type="button" class="add-item-btn" data-phase="solution">+ 항목 추가</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn-secondary" id="step2Back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        이전
+      </button>
+      <button type="submit" class="btn-primary">
+        포트폴리오 생성하기
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+  </form>
+</section>
+
+<!-- ══════════════════════════════════
+     STEP 3: Portfolio Result
+══════════════════════════════════ -->
+<section id="step3" class="step" aria-label="생성된 포트폴리오">
+
+  <!-- HERO -->
+  <div class="portfolio-hero">
+    <div class="hero-bg">
+      <img id="heroBg" src="" alt="" aria-hidden="true" />
+    </div>
+    <div class="hero-gradient" aria-hidden="true"></div>
+    <div class="hero-content">
+      <div class="hero-text">
+        <h1 id="heroTitle">프로젝트 이름</h1>
+        <p id="heroDesc">프로젝트 설명이 여기에 표시됩니다.</p>
+      </div>
+      <!-- Mockup (device-specific) -->
+      <div id="mockupContainer"></div>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <div class="about-section">
+    <div>
+      <p class="section-eyebrow">About The</p>
+      <h2 class="section-title">
+        About The <span class="hl-green">Project</span>
+      </h2>
+      <p class="about-description" id="aboutDesc"></p>
+      <div class="skill-tags" id="skillTagsDisplay"></div>
+    </div>
+    <div id="aboutImageArea"></div>
+  </div>
+
+  <!-- WHAT COVERED -->
+  <div class="covered-section" id="coveredSection">
+    <div class="covered-header">
+      <div>
+        <p class="section-eyebrow">Scope</p>
+        <h2 class="section-title">
+          What This <span class="hl-green">Project</span><br>Covered
+        </h2>
+      </div>
+      <p>This section outlines the key tasks and deliverables completed during the project.</p>
+    </div>
+    <div class="timeline-row" id="timelineDisplay"></div>
+  </div>
+
+  <!-- GALLERY -->
+  <div class="gallery-section" id="gallerySection">
+    <p class="section-eyebrow">Gallery</p>
+    <h2 class="section-title">Project <span class="hl-green">Screens</span></h2>
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </div>
+
+  <!-- bottom padding for action bar -->
+  <div style="height: 80px;"></div>
+
+  <!-- Action Bar -->
+  <div class="action-bar" role="toolbar" aria-label="포트폴리오 액션">
+    <button class="action-btn" id="editBtn" aria-label="편집으로 돌아가기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+      편집
+    </button>
+    <div class="action-sep" aria-hidden="true"></div>
+    <button class="action-btn primary-action" id="shareBtn" aria-label="링크 복사">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+      </svg>
+      링크 복사
+    </button>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════ -->
+<script>
+  // ── State ──
+  const state = {
+    images: [],       // { url, file }
+    device: 'mobile',
+    tags: [],
+    timeline: {
+      planning: { duration: '', items: [] },
+      discovery: { duration: '', items: [] },
+      solution: { duration: '', items: [] }
+    }
+  };
+
+  // ── DOM refs ──
+  const steps = [document.getElementById('step1'), document.getElementById('step2'), document.getElementById('step3')];
+  const dots = [document.getElementById('dot1'), document.getElementById('dot2'), document.getElementById('dot3')];
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const previewGrid = document.getElementById('previewGrid');
+  const step1Next = document.getElementById('step1Next');
+  const toast = document.getElementById('toast');
+  const overlay = document.getElementById('generatingOverlay');
+  const progressBar = document.getElementById('progressBar');
+
+  // ── Step navigation ──
+  function goToStep(n) {
+    steps.forEach((s, i) => {
+      s.classList.remove('active');
+      dots[i].classList.remove('active', 'done');
+      if (i < n) dots[i].classList.add('done');
+    });
+    steps[n].classList.add('active');
+    dots[n].classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Image upload ──
+  function handleFiles(files) {
+    const remaining = 10 - state.images.length;
+    const toAdd = Array.from(files).slice(0, remaining);
+    toAdd.forEach(file => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        state.images.push({ url: e.target.result, file });
+        renderPreviews();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderPreviews() {
+    previewGrid.innerHTML = '';
+    state.images.forEach((img, i) => {
+      const div = document.createElement('div');
+      div.className = 'preview-item';
+      div.innerHTML = `
+        <img src="${img.url}" alt="업로드 이미지 ${i + 1}" />
+        <button class="remove-btn" aria-label="이미지 ${i + 1} 제거" data-idx="${i}">✕</button>
+      `;
+      previewGrid.appendChild(div);
+    });
+    step1Next.disabled = state.images.length === 0;
+  }
+
+  previewGrid.addEventListener('click', e => {
+    const btn = e.target.closest('.remove-btn');
+    if (!btn) return;
+    state.images.splice(parseInt(btn.dataset.idx), 1);
+    renderPreviews();
+  });
+
+  // Drag & drop
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    handleFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', e => handleFiles(e.target.files));
+  dropzone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+
+  document.getElementById('step1Next').addEventListener('click', () => {
+    if (state.images.length > 0) goToStep(1);
+  });
+
+  // ── Device selection ──
+  document.querySelectorAll('.device-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.device-opt').forEach(o => {
+        o.classList.remove('selected');
+        o.setAttribute('aria-checked', 'false');
+      });
+      opt.classList.add('selected');
+      opt.setAttribute('aria-checked', 'true');
+      state.device = opt.dataset.device;
+    });
+    opt.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); opt.click(); }
+    });
+  });
+
+  // ── Tag input ──
+  const tagInput = document.getElementById('tagInput');
+  const tagContainer = document.getElementById('tagContainer');
+
+  function renderTags() {
+    tagContainer.querySelectorAll('.tag').forEach(t => t.remove());
+    state.tags.forEach((tag, i) => {
+      const el = document.createElement('div');
+      el.className = 'tag';
+      el.innerHTML = `${tag}<span class="tag-remove" role="button" aria-label="${tag} 제거" data-idx="${i}" tabindex="0">✕</span>`;
+      tagContainer.insertBefore(el, tagInput);
+    });
+  }
+
+  tagContainer.addEventListener('click', e => {
+    const rm = e.target.closest('.tag-remove');
+    if (rm) { state.tags.splice(parseInt(rm.dataset.idx), 1); renderTags(); }
+    else tagInput.focus();
+  });
+
+  tagInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = tagInput.value.trim().replace(/,$/, '');
+      if (val && !state.tags.includes(val)) { state.tags.push(val); renderTags(); }
+      tagInput.value = '';
+    }
+    if (e.key === 'Backspace' && tagInput.value === '' && state.tags.length > 0) {
+      state.tags.pop(); renderTags();
+    }
+  });
+
+  // ── Timeline items ──
+  ['planning', 'discovery', 'solution'].forEach(phase => {
+    const btn = document.querySelector(`.add-item-btn[data-phase="${phase}"]`);
+    btn.addEventListener('click', () => {
+      const text = prompt(`${phase} 항목 추가:`);
+      if (!text) return;
+      state.timeline[phase].items.push(text.trim());
+      renderTimelineItems(phase);
+    });
+
+    // Duration input sync
+    document.querySelector(`input[data-phase="${phase}"][data-field="duration"]`)
+      .addEventListener('input', e => { state.timeline[phase].duration = e.target.value; });
+  });
+
+  function renderTimelineItems(phase) {
+    const container = document.getElementById(`${phase}-items`);
+    container.innerHTML = '';
+    state.timeline[phase].items.forEach((item, i) => {
+      const el = document.createElement('div');
+      el.className = 'timeline-tag';
+      el.innerHTML = `${item}<span class="rm" role="button" tabindex="0" aria-label="${item} 제거">✕</span>`;
+      el.querySelector('.rm').addEventListener('click', () => {
+        state.timeline[phase].items.splice(i, 1);
+        renderTimelineItems(phase);
+      });
+      container.appendChild(el);
+    });
+  }
+
+  // ── Back buttons ──
+  document.getElementById('step2Back').addEventListener('click', () => goToStep(0));
+  document.getElementById('editBtn').addEventListener('click', () => goToStep(1));
+
+  // ── Form submit → Generate ──
+  document.getElementById('portfolioForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = document.getElementById('projectName').value.trim();
+    const desc = document.getElementById('projectDesc').value.trim();
+    if (!name || !desc) {
+      showToast('프로젝트 이름과 설명을 입력해주세요.');
+      return;
+    }
+    startGenerate(name, desc);
+  });
+
+  function startGenerate(name, desc) {
+    overlay.classList.add('show');
+    progressBar.style.width = '0%';
+    let w = 0;
+    const iv = setInterval(() => {
+      w = Math.min(w + Math.random() * 18 + 5, 95);
+      progressBar.style.width = w + '%';
+    }, 180);
+
+    setTimeout(() => {
+      clearInterval(iv);
+      progressBar.style.width = '100%';
+      setTimeout(() => {
+        overlay.classList.remove('show');
+        buildPortfolio(name, desc);
+        goToStep(2);
+      }, 350);
+    }, 1600);
+  }
+
+  // ── Build Portfolio ──
+  function buildPortfolio(name, desc) {
+    // Hero
+    document.getElementById('heroBg').src = state.images[0]?.url || '';
+    document.getElementById('heroBg').alt = name + ' 히어로 이미지';
+    document.getElementById('heroTitle').textContent = name;
+    document.getElementById('heroDesc').textContent = desc.slice(0, 120) + (desc.length > 120 ? '...' : '');
+
+    // Mockup
+    buildMockup(state.images[0]?.url || '');
+
+    // About
+    document.getElementById('aboutDesc').textContent = desc;
+    const tagsDisplay = document.getElementById('skillTagsDisplay');
+    tagsDisplay.innerHTML = '';
+    state.tags.forEach(tag => {
+      const el = document.createElement('span');
+      el.className = 'skill-tag';
+      el.textContent = tag;
+      tagsDisplay.appendChild(el);
+    });
+
+    // About image (2nd image)
+    const aboutArea = document.getElementById('aboutImageArea');
+    if (state.images[1]) {
+      aboutArea.innerHTML = `<div style="border-radius:20px;overflow:hidden;box-shadow:var(--shadow-lg);">
+        <img src="${state.images[1].url}" alt="${name} 상세 이미지" style="width:100%;display:block;" />
+      </div>`;
+    } else {
+      aboutArea.innerHTML = '';
+    }
+
+    // Timeline
+    buildTimeline();
+
+    // Gallery (remaining images)
+    buildGallery(name);
+  }
+
+  function buildMockup(imgUrl) {
+    const container = document.getElementById('mockupContainer');
+    const d = state.device;
+    let html = '';
+    if (d === 'mobile') {
+      html = `<div class="phone-mockup">
+        <div class="phone-frame">
+          <div class="phone-notch" aria-hidden="true"></div>
+          <div class="phone-screen">
+            <img src="${imgUrl}" alt="앱 스크린샷" />
+          </div>
+        </div>
+      </div>`;
+    } else if (d === 'tablet') {
+      html = `<div class="tablet-mockup">
+        <div class="tablet-frame">
+          <div class="tablet-screen">
+            <img src="${imgUrl}" alt="태블릿 스크린샷" />
+          </div>
+        </div>
+      </div>`;
+    } else {
+      html = `<div class="browser-mockup">
+        <div class="browser-frame">
+          <div class="browser-bar" aria-hidden="true">
+            <div class="browser-dot" style="background:#FF5F57"></div>
+            <div class="browser-dot" style="background:#FFBD2E"></div>
+            <div class="browser-dot" style="background:#28C840"></div>
+          </div>
+          <div class="browser-screen">
+            <img src="${imgUrl}" alt="웹 스크린샷" />
+          </div>
+        </div>
+      </div>`;
+    }
+    container.innerHTML = html;
+  }
+
+  function buildTimeline() {
+    const display = document.getElementById('timelineDisplay');
+    const phases = ['planning', 'discovery', 'solution'];
+    const labels = ['Planning', 'Discovery', 'Solution'];
+
+    let hasAny = phases.some(p =>
+      state.timeline[p].duration || state.timeline[p].items.length > 0
+    );
+
+    document.getElementById('coveredSection').style.display = hasAny ? '' : 'none';
+    if (!hasAny) return;
+
+    display.innerHTML = '';
+    phases.forEach((phase, i) => {
+      const t = state.timeline[phase];
+      const dur = t.duration || '—';
+      const tasks = t.items.length > 0
+        ? t.items.map(item => `<div class="timeline-task">${item}</div>`).join('')
+        : '<div class="timeline-task" style="color:#aaa">항목 없음</div>';
+
+      display.innerHTML += `
+        <div class="timeline-item">
+          <div class="timeline-item-title">${labels[i]}</div>
+          <div class="timeline-duration">
+            <div class="timeline-line"></div>
+            <span>${dur}</span>
+            <div class="timeline-line"></div>
+          </div>
+          <div class="timeline-tasks">${tasks}</div>
+        </div>`;
+    });
+  }
+
+  function buildGallery(name) {
+    const grid = document.getElementById('galleryGrid');
+    grid.innerHTML = '';
+    const galleryImgs = state.images.slice(2);
+
+    if (galleryImgs.length === 0) {
+      document.getElementById('gallerySection').style.display = 'none';
+      return;
+    }
+    document.getElementById('gallerySection').style.display = '';
+
+    const textCards = [
+      { title: 'User Pains', cls: 'user-pains', items: ['핵심 사용자 불편 포인트 1', '핵심 사용자 불편 포인트 2', '해결이 필요한 과제'] },
+      { title: 'Solutions', cls: 'solutions', items: ['제안된 솔루션 1', '제안된 솔루션 2', '개선된 사용자 경험'] },
+    ];
+
+    galleryImgs.forEach((img, i) => {
+      const card = textCards[i % textCards.length];
+      const item = document.createElement('div');
+      item.className = 'gallery-item';
+
+      const textCard = document.createElement('div');
+      textCard.className = 'gallery-text-card';
+      textCard.innerHTML = buildCardHTML(card, false);
+
+      // Edit toggle
+      textCard.querySelector('.edit-card-btn').addEventListener('click', () => {
+        const isEditing = textCard.classList.toggle('card-editing');
+        toggleCardEdit(textCard, isEditing);
+      });
+
+      const imgDiv = document.createElement('div');
+      imgDiv.className = 'gallery-img';
+      imgDiv.innerHTML = `<img src="${img.url}" alt="${name} 스크린 ${i + 3}" />`;
+
+      item.appendChild(imgDiv);
+      item.appendChild(textCard);
+      grid.appendChild(item);
+    });
+  }
+
+  function buildCardHTML(card, editing) {
+    const btnLabel = editing ? '완료' : '편집';
+    const btnIcon = editing
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>`;
+    return `
+      <button class="edit-card-btn" aria-label="카드 ${btnLabel}">${btnIcon} ${btnLabel}</button>
+      <h3 class="${card.cls}">${card.title}</h3>
+      <ul>${card.items.map(t => `<li>
+        <span class="li-text">${t}</span>
+        <button class="li-del" aria-label="항목 삭제" style="display:none">✕</button>
+      </li>`).join('')}</ul>
+      <button class="add-li-btn" style="display:none" aria-label="항목 추가">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        항목 추가
+      </button>`;
+  }
+
+  function toggleCardEdit(card, editing) {
+    // Update button label/icon
+    const btn = card.querySelector('.edit-card-btn');
+    btn.innerHTML = editing
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polyline points="20 6 9 17 4 12"/></svg> 완료`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg> 편집`;
+
+    // Title editable
+    const h3 = card.querySelector('h3');
+    if (editing) {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'card-title-edit';
+      input.value = h3.textContent;
+      input.setAttribute('aria-label', '카드 제목 편집');
+      h3.replaceWith(input);
+      input.focus();
+    } else {
+      const input = card.querySelector('.card-title-edit');
+      if (input) {
+        const newH3 = document.createElement('h3');
+        newH3.className = h3 ? h3.className : '';
+        // Preserve highlight class from original
+        const origH3 = card.querySelector('h3');
+        if (!origH3) {
+          // find original class from existing items
+          newH3.className = input.previousSibling?.className || '';
+        }
+        newH3.textContent = input.value || input.placeholder;
+        // re-apply highlight class
+        newH3.className = newH3.className || '';
+        input.replaceWith(newH3);
+      }
+    }
+
+    // List items contenteditable + delete btns
+    card.querySelectorAll('.li-text').forEach(span => {
+      span.contentEditable = editing ? 'true' : 'false';
+    });
+    card.querySelectorAll('.li-del').forEach(delBtn => {
+      delBtn.style.display = editing ? 'inline' : 'none';
+      if (editing) {
+        delBtn.onclick = () => delBtn.closest('li').remove();
+      }
+    });
+
+    // Add item button
+    const addBtn = card.querySelector('.add-li-btn');
+    addBtn.style.display = editing ? 'flex' : 'none';
+    addBtn.onclick = () => {
+      const ul = card.querySelector('ul');
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="li-text" contenteditable="true">새 항목</span>
+        <button class="li-del" aria-label="항목 삭제">✕</button>`;
+      li.querySelector('.li-del').onclick = () => li.remove();
+      ul.appendChild(li);
+      li.querySelector('.li-text').focus();
+
+      // select all text
+      const range = document.createRange();
+      range.selectNodeContents(li.querySelector('.li-text'));
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+    };
+  }
+
+  // ── Share ──
+  document.getElementById('shareBtn').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      showToast('링크가 클립보드에 복사됐어요!');
+    } catch {
+      showToast('URL을 수동으로 복사해주세요.');
+    }
+  });
+
+  // ── Toast ──
+  let toastTimer;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+  }
+
+  // ── Intersection Observer for scroll anim ──
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  function observeSection(el) {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(32px)';
+    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(el);
+  }
+
+  // Apply after portfolio is built
+  const origBuild = buildPortfolio;
+  window.buildPortfolio = function(name, desc) {
+    origBuild(name, desc);
+    requestAnimationFrame(() => {
+      ['.about-section', '.covered-section', '.gallery-section'].forEach(sel => {
+        const el = document.querySelector(sel);
+        if (el) observeSection(el);
+      });
+    });
+  };
+  buildPortfolio = window.buildPortfolio;
+</script>
+</body>
+</html>
