@@ -98,5 +98,7 @@ temp/
 .parcel-cache/
 coverage/
 
-# Claude Code 로컬 설정
+# Claude Code 로컬 설정 / 내부 상태
 .claude/settings.local.json
+.claude/worktrees/
+.claire/
