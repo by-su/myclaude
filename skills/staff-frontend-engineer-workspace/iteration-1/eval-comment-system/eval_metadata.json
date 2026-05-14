@@ -1,0 +1,15 @@
+{
+  "eval_id": 2,
+  "eval_name": "comment-system",
+  "prompt": "댓글 시스템 컴포넌트 만들어줘. 댓글 작성, 수정, 삭제, 대댓글 기능이 있어야 해. 낙관적 업데이트도 적용해줘.",
+  "assertions": [
+    "Response has three sections: Architecture Overview, Code Implementation, Review Points",
+    "Types/Schemas, Hooks, and Components are separated into distinct files or clearly labeled sections",
+    "No usage of 'any' type in TypeScript code",
+    "Uses shadcn/ui components",
+    "Each code block includes a file path comment",
+    "Uses TanStack Query optimistic update pattern (onMutate/onError/onSettled or optimisticUpdate)",
+    "Implements recursive/nested reply (대댓글) structure",
+    "Uses ErrorBoundary or Suspense for declarative error/loading handling"
+  ]
+}

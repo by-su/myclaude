@@ -1,0 +1,176 @@
+{
+  "metadata": {
+    "skill_name": "strategic-pm",
+    "skill_path": "/Users/bysu/.claude/skills/strategic-pm",
+    "executor_model": "claude-sonnet-4-6",
+    "analyzer_model": "claude-sonnet-4-6",
+    "timestamp": "2026-05-12T13:30:00Z",
+    "evals_run": [1, 2, 3],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "eval_name": "1인가구-식재료-공동구매",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 127.4,
+        "tokens": 21344,
+        "tool_calls": 3,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "핵심 가치 제안(Value Proposition)이 명확히 정의됐다", "passed": true, "evidence": "VP 테이블 명시: 누구의/어떤/어떻게 구조"},
+        {"text": "당근마켓, 쿠팡, 마켓컬리 등 경쟁 서비스가 최소 1개 이상 언급됐다", "passed": true, "evidence": "당근마켓, 올웨이즈, 더반찬&, 마켓컬리 4개 경쟁사 표로 정리"},
+        {"text": "실패 리스크 또는 비판적 시각이 최소 1가지 포함됐다", "passed": true, "evidence": "3가지 리스크: 콜드 스타트, 신뢰/안전, 플랫폼 이탈"},
+        {"text": "수익화 모델이 2가지 이상 제시됐다", "passed": true, "evidence": "3가지 모델: 거래 수수료, Freemium, B2B 파트너십"},
+        {"text": "구체적인 후속 질문으로 응답이 마무리됐다", "passed": true, "evidence": "Q1(론칭 동네/오프라인 연계), Q2(팀 구성/기술 스택) 2가지 질문"}
+      ]
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "1인가구-식재료-공동구매",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.6,
+        "passed": 3,
+        "failed": 2,
+        "total": 5,
+        "time_seconds": 39.7,
+        "tokens": 14509,
+        "tool_calls": 2,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "핵심 가치 제안(Value Proposition)이 명확히 정의됐다", "passed": false, "evidence": "명시적 VP 정의 없음. '왜 좋은가' 긍정 나열만"},
+        {"text": "당근마켓, 쿠팡, 마켓컬리 등 경쟁 서비스가 최소 1개 이상 언급됐다", "passed": true, "evidence": "당근마켓, 올웨이즈, Olio 언급"},
+        {"text": "실패 리스크 또는 비판적 시각이 최소 1가지 포함됐다", "passed": true, "evidence": "어려움 표 있으나 해결책 중심, 비판 강도 낮음"},
+        {"text": "수익화 모델이 2가지 이상 제시됐다", "passed": true, "evidence": "3가지 모델 언급"},
+        {"text": "구체적인 후속 질문으로 응답이 마무리됐다", "passed": false, "evidence": "'어떤 부분을 더 구체화하고 싶으신가요?' — 너무 포괄적"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "개발자-빌딩파트너-매칭",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 145.3,
+        "tokens": 22197,
+        "tool_calls": 3,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "'이게 진짜 문제인가?' 페인포인트 검증이 포함됐다", "passed": true, "evidence": "'WTP로 연결되기 어렵다', '무료 대안 이미 존재' 구체적 비판"},
+        {"text": "기능이 필수/부가/확장 단계로 분류됐다", "passed": true, "evidence": "Core/Enhancement/Scale 3단계 명확히 구분"},
+        {"text": "MVP 범위가 구체적으로 정의됐다", "passed": true, "evidence": "MVP = 프로필+매칭+마일스톤+체크인, 6~10주, Next.js+Supabase 명시"},
+        {"text": "실패 리스크 또는 비판적 관점이 포함됐다", "passed": true, "evidence": "3가지 리스크: 닭-달걀 문제, 완성률 평판 훼손, 무료 복제 가능"},
+        {"text": "구체적인 후속 질문으로 응답이 마무리됐다", "passed": true, "evidence": "Q1(직접 개발 의향/팀 구성), Q2(책임감 메커니즘 선호) 2가지"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "개발자-빌딩파트너-매칭",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 52.3,
+        "tokens": 15257,
+        "tool_calls": 2,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "'이게 진짜 문제인가?' 페인포인트 검증이 포함됐다", "passed": true, "evidence": "'수익화 까다롭다, 무료 대안 많다' 언급 — 피상적 수준"},
+        {"text": "기능이 필수/부가/확장 단계로 분류됐다", "passed": false, "evidence": "기능 3단계 분류 없음. MVP 방식(게시판+뉴스레터+Discord)만 제안"},
+        {"text": "MVP 범위가 구체적으로 정의됐다", "passed": true, "evidence": "게시판+뉴스레터+Discord 수동 검증 먼저 제안. 구체적이고 실용적"},
+        {"text": "실패 리스크 또는 비판적 관점이 포함됐다", "passed": true, "evidence": "콜드 스타트, 무임승차, 수익화 3가지 리스크 언급"},
+        {"text": "구체적인 후속 질문으로 응답이 마무리됐다", "passed": true, "evidence": "'어느 쪽 수요가 강한지 파악이 중요' — 서술형 방향 제시 (질문 형식 아님)"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "AI-유튜브-댓글-자동답글",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.4,
+        "passed": 2,
+        "failed": 3,
+        "total": 5,
+        "time_seconds": 33.9,
+        "tokens": 16667,
+        "tool_calls": 3,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "법적·윤리적 리스크(YouTube ToS, 팬 사칭, 딥페이크 등)가 언급됐다", "passed": false, "evidence": "1단계에서 중단. 4단계(비판적 검증)까지 진행 안 함"},
+        {"text": "'사용자가 돈을 낼 만큼 고통스러운가?' 페인포인트 검증이 있다", "passed": true, "evidence": "VP에서 크리에이터 시간 낭비 페인포인트 명확히 정의, 구독자 규모별 분류"},
+        {"text": "수익화 모델이 2가지 이상 제시됐다", "passed": false, "evidence": "5단계까지 진행 안 함. 질문에서 멈춤"},
+        {"text": "경쟁/유사 서비스가 최소 1개 이상 언급됐다", "passed": false, "evidence": "경쟁 분석 미진행 (4단계 도달 안 함)"},
+        {"text": "구체적인 후속 질문으로 응답이 마무리됐다", "passed": true, "evidence": "Q1(자동화 수준 스펙트럼), Q2(타깃 구독자 규모) 날카로운 질문"}
+      ],
+      "notes": ["스킬이 1단계에서 사용자 확인을 기다리며 중단 — 단일 프롬프트 평가에서 전체 워크플로우 미완성"]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "AI-유튜브-댓글-자동답글",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 48.2,
+        "tokens": 15282,
+        "tool_calls": 2,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "법적·윤리적 리스크(YouTube ToS, 팬 사칭, 딥페이크 등)가 언급됐다", "passed": true, "evidence": "'유튜브 정책 이슈, API 정책 범위' 언급"},
+        {"text": "'사용자가 돈을 낼 만큼 고통스러운가?' 페인포인트 검증이 있다", "passed": true, "evidence": "'크리에이터들이 댓글 관리에 쏟는 시간이 엄청나다는 건 실제 페인 포인트'"},
+        {"text": "수익화 모델이 2가지 이상 제시됐다", "passed": true, "evidence": "월정액 SaaS, 댓글 수 기반 과금, MCN B2B 3가지 언급"},
+        {"text": "경쟁/유사 서비스가 최소 1개 이상 언급됐다", "passed": false, "evidence": "구체적 경쟁 서비스 언급 없음. 시장 성장만 언급"},
+        {"text": "구체적인 후속 질문으로 응답이 마무리됐다", "passed": true, "evidence": "'타겟 크리에이터 규모나 수익 모델 쪽으로 더 얘기 나눠볼 수 있어요'"}
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 0.80, "stddev": 0.28, "min": 0.40, "max": 1.00},
+      "time_seconds": {"mean": 102.2, "stddev": 48.2, "min": 33.9, "max": 145.3},
+      "tokens": {"mean": 20069, "stddev": 2382, "min": 16667, "max": 22197}
+    },
+    "without_skill": {
+      "pass_rate": {"mean": 0.73, "stddev": 0.09, "min": 0.60, "max": 0.80},
+      "time_seconds": {"mean": 46.7, "stddev": 5.3, "min": 39.7, "max": 52.3},
+      "tokens": {"mean": 15016, "stddev": 344, "min": 14509, "max": 15282}
+    },
+    "delta": {
+      "pass_rate": "+0.07",
+      "time_seconds": "+55.5",
+      "tokens": "+5053"
+    }
+  },
+  "notes": [
+    "Eval 3 with_skill이 1단계에서 멈춤 — 스킬이 단일 프롬프트에서 전체 워크플로우를 완성하도록 지시가 명확해야 함",
+    "Eval 1, 2 with_skill은 모두 5/5 만점 — 기획 구조화(VP 정의, 기능 분류, PRD) 역량은 명확히 우수",
+    "without_skill 결과도 준수 (0.73 평균) — 스킬 없이도 일반 PM 대화가 어느 정도 가능해 차별화 포인트 강화 필요",
+    "with_skill이 평균 2.2× 더 많은 시간과 토큰 사용 — 단계별 구조화의 비용",
+    "Eval 3 패턴 수정이 최우선 개선 과제 — 단일 응답에서도 전체 5단계를 완성하도록 스킬 지시 수정 필요"
+  ]
+}

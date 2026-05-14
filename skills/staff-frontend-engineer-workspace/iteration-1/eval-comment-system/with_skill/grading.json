@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "Response has three sections: Architecture Overview, Code Implementation, Review Points",
+      "passed": true,
+      "evidence": "The response contains exactly three numbered sections: '## 1. Architecture Overview' (line 3), '## 2. Code Implementation' (line 53), and '## 3. Review Points' (line 1123)."
+    },
+    {
+      "text": "Types/Schemas, Hooks, and Components are separated into distinct files or clearly labeled sections",
+      "passed": true,
+      "evidence": "Types/Schemas are in 'features/comments/types.ts', Hooks are in 'features/comments/hooks/use-comments.ts' and 'use-comment-form.ts', Components are in separate files under 'features/comments/components/'. Each code block has a file path comment and the Code Implementation section uses labeled subsections: 'Types/Schemas', 'Hooks', 'Components'."
+    },
+    {
+      "text": "No usage of 'any' type in TypeScript code",
+      "passed": true,
+      "evidence": "Grep search for '\\bany\\b' in response.md returned no matches. All types are explicitly defined using Zod inference, named interfaces, or specific TypeScript types (e.g., Comment, CommentNode, InfiniteData<CommentListResponse>). The handleResponse function uses 'unknown' instead of 'any'."
+    },
+    {
+      "text": "Uses shadcn/ui components",
+      "passed": true,
+      "evidence": "Multiple shadcn/ui components are imported and used: Button from '@/components/ui/button', Avatar/AvatarFallback/AvatarImage from '@/components/ui/avatar', Textarea from '@/components/ui/textarea', AlertDialog and related components from '@/components/ui/alert-dialog'."
+    },
+    {
+      "text": "Each code block includes a file path comment",
+      "passed": true,
+      "evidence": "Every code block starts with a file path comment: '// features/comments/types.ts', '// features/comments/lib/comment-tree.ts', '// features/comments/lib/comment-api.ts', '// features/comments/hooks/use-comments.ts', '// features/comments/hooks/use-comment-form.ts', '// features/comments/components/comment-section.tsx', '// features/comments/components/comment-list.tsx', '// features/comments/components/comment-item.tsx', '// features/comments/components/comment-actions.tsx', '// features/comments/components/comment-form.tsx', '// features/comments/index.ts', '// app/posts/[postId]/page.tsx'."
+    },
+    {
+      "text": "Uses TanStack Query optimistic update pattern (onMutate/onError/onSettled or optimisticUpdate)",
+      "passed": true,
+      "evidence": "All three mutations (useCreateComment, useUpdateComment, useDeleteComment) implement the full onMutate/onError/onSettled pattern: onMutate cancels queries, saves snapshot, updates cache optimistically; onError rolls back to previousData; onSettled calls invalidateQueries. This is the canonical TanStack Query optimistic update pattern."
+    },
+    {
+      "text": "Implements recursive/nested reply (대댓글) structure",
+      "passed": true,
+      "evidence": "CommentNode interface has 'replies: CommentNode[]' and 'depth: number'. buildCommentTree() recursively builds tree from flat array. CommentItem renders its node.replies by mapping over them and rendering nested CommentItem components (lines 854-866), creating a recursive rendering structure. maxDepth limits nesting depth."
+    },
+    {
+      "text": "Uses ErrorBoundary or Suspense for declarative error/loading handling",
+      "passed": true,
+      "evidence": "CommentSection component wraps CommentList with both ErrorBoundary (from react-error-boundary with CommentSectionFallback) and Suspense (with CommentSectionSkeleton fallback) at lines 602-610. Custom error fallback shows error message and retry button."
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "total": 8,
+    "pass_rate": 1.0
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "Response has three sections: Architecture Overview, Code Implementation, Review Points",
+      "passed": false,
+      "evidence": "The response has sections numbered 1-9 (타입 정의, 유틸리티, API 레이어, 낙관적 업데이트 훅, 댓글 비즈니스 로직 훅, 댓글 작성 폼, 댓글 아이템, 댓글 목록, 최상위 컴포넌트) plus '사용 예시' and '설계 결정 요약'. There is no explicit 'Architecture Overview', 'Code Implementation', or 'Review Points' section structure."
+    },
+    {
+      "text": "Types/Schemas, Hooks, and Components are separated into distinct files or clearly labeled sections",
+      "passed": true,
+      "evidence": "Types are in a dedicated 'types.ts' (section 1), hooks are in 'hooks/useOptimisticComments.ts' (section 4) and 'hooks/useComments.ts' (section 5), and components are in separate files: CommentForm.tsx (section 6), CommentItem.tsx (section 7), CommentList.tsx (section 8), CommentSystem.tsx (section 9). Each is a clearly labeled section."
+    },
+    {
+      "text": "No usage of 'any' type in TypeScript code",
+      "passed": true,
+      "evidence": "Searched all code blocks in the response. No instance of 'any' type annotation is used anywhere. All types are explicitly defined (Comment, OptimisticComment, CreateCommentPayload, etc.) with proper TypeScript types."
+    },
+    {
+      "text": "Uses shadcn/ui components",
+      "passed": false,
+      "evidence": "No shadcn/ui component imports are present anywhere in the code. All UI is built with raw HTML elements (textarea, button, div, form) styled with Tailwind CSS classes directly. No imports from '@/components/ui/' or similar shadcn/ui paths."
+    },
+    {
+      "text": "Each code block includes a file path comment",
+      "passed": false,
+      "evidence": "Code blocks do not include file path comments inside the code itself. File paths are indicated in the section headings (e.g., '## 1. 타입 정의 (`types.ts`)') but not as comments within the code blocks (e.g., no '// src/features/comments/types.ts' at the top of each block)."
+    },
+    {
+      "text": "Uses TanStack Query optimistic update pattern (onMutate/onError/onSettled or optimisticUpdate)",
+      "passed": false,
+      "evidence": "TanStack Query (React Query) is not used at all. The response implements a custom optimistic update pattern using useState and a custom useOptimisticComments hook with snapshot/rollback. The design decision table explicitly states: '상태 관리: useState + 커스텀 훅 — 외부 라이브러리 의존 없이 구현'. No useMutation, onMutate, onError, or onSettled from TanStack Query."
+    },
+    {
+      "text": "Implements recursive/nested reply (대댓글) structure",
+      "passed": true,
+      "evidence": "The Comment type has 'children: Comment[]' and 'parentId: string | null'. buildCommentTree() converts flat arrays to nested trees. CommentItem recursively renders children: 'comment.children.map((child) => <CommentItem ... depth={depth + 1} ... />)'. Max depth is configurable (default 4). The addChildComment helper recursively finds parent nodes to insert replies."
+    },
+    {
+      "text": "Uses ErrorBoundary or Suspense for declarative error/loading handling",
+      "passed": false,
+      "evidence": "Error handling uses imperative pattern with useState: 'const [error, setError] = useState<string | null>(null)' and conditional rendering '{error && <div role=\"alert\">...}'. Loading uses 'const [isLoading, setIsLoading] = useState(true)' with conditional rendering. No React ErrorBoundary component or Suspense boundary is used anywhere."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 5,
+    "total": 8,
+    "pass_rate": 0.375
+  }
+}

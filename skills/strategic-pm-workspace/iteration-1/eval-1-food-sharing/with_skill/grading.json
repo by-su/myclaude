@@ -1,0 +1,34 @@
+{
+  "eval_id": 1,
+  "configuration": "with_skill",
+  "expectations": [
+    {
+      "text": "핵심 가치 제안(Value Proposition)이 명확히 정의됐다",
+      "passed": true,
+      "evidence": "VP 테이블 명시: '혼자 사는 사람이 대형마트 대용량 식재료를 낭비 없이 구매할 수 있도록, 같은 동네 이웃과 묶음 구매를 연결해주는 로컬 공동구매 플랫폼'"
+    },
+    {
+      "text": "당근마켓, 쿠팡, 마켓컬리 등 경쟁 서비스가 최소 1개 이상 언급됐다",
+      "passed": true,
+      "evidence": "당근마켓, 올웨이즈, 더반찬&, 마켓컬리 스페셜 4개 경쟁사 표로 정리"
+    },
+    {
+      "text": "실패 리스크 또는 비판적 시각이 최소 1가지 포함됐다",
+      "passed": true,
+      "evidence": "3가지 리스크 명시: 콜드 스타트, 신뢰/안전 문제, 반복 사용 동기 부족(플랫폼 이탈)"
+    },
+    {
+      "text": "수익화 모델이 2가지 이상 제시됐다",
+      "passed": true,
+      "evidence": "3가지 모델: 거래 수수료, 프리미엄 구독(Freemium), 마트·식품 브랜드 B2B 파트너십"
+    },
+    {
+      "text": "구체적인 후속 질문으로 응답이 마무리됐다",
+      "passed": true,
+      "evidence": "Q1(론칭 동네/오프라인 커뮤니티 전략), Q2(팀 구성/기술 스택) 2가지 구체적 질문으로 마무리"
+    }
+  ],
+  "total_passed": 5,
+  "total_assertions": 5,
+  "pass_rate": 1.0
+}

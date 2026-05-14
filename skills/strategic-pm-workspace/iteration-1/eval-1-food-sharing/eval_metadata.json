@@ -1,0 +1,27 @@
+{
+  "eval_id": 1,
+  "eval_name": "1인가구-식재료-공동구매",
+  "prompt": "요즘 혼자 사는 사람들이 많잖아요. 1인 가구를 위한 소량 식재료 공동구매 앱을 만들고 싶어요. 같은 동네 사람들끼리 묶어서 대용량 제품을 나눠 사는 거예요.",
+  "assertions": [
+    {
+      "text": "핵심 가치 제안(Value Proposition)이 명확히 정의됐다",
+      "id": "has_value_proposition"
+    },
+    {
+      "text": "당근마켓, 쿠팡, 마켓컬리 등 경쟁 서비스가 최소 1개 이상 언급됐다",
+      "id": "has_competitive_analysis"
+    },
+    {
+      "text": "실패 리스크 또는 비판적 시각이 최소 1가지 포함됐다",
+      "id": "has_risk_critique"
+    },
+    {
+      "text": "수익화 모델이 2가지 이상 제시됐다",
+      "id": "has_monetization_models"
+    },
+    {
+      "text": "구체적인 후속 질문으로 응답이 마무리됐다",
+      "id": "ends_with_question"
+    }
+  ]
+}

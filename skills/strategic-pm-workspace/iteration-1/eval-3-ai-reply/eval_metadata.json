@@ -1,0 +1,27 @@
+{
+  "eval_id": 3,
+  "eval_name": "AI-유튜브-댓글-자동답글",
+  "prompt": "저 창업 아이디어 있는데 들어봐줄 수 있어요? AI로 유튜브 영상을 분석해서 해당 크리에이터의 말투와 스타일을 학습하고, 크리에이터 대신 댓글에 자동으로 답글 달아주는 서비스예요. 크리에이터들이 댓글 관리에 너무 시간을 쏟잖아요.",
+  "assertions": [
+    {
+      "text": "법적·윤리적 리스크(YouTube ToS, 팬 사칭, 딥페이크 등)가 언급됐다",
+      "id": "has_legal_or_ethical_risk"
+    },
+    {
+      "text": "'사용자가 돈을 낼 만큼 고통스러운가?' 페인포인트 검증이 있다",
+      "id": "has_pain_point_validation"
+    },
+    {
+      "text": "수익화 모델이 2가지 이상 제시됐다",
+      "id": "has_monetization_models"
+    },
+    {
+      "text": "경쟁/유사 서비스가 최소 1개 이상 언급됐다",
+      "id": "has_competitive_analysis"
+    },
+    {
+      "text": "구체적인 후속 질문으로 응답이 마무리됐다",
+      "id": "ends_with_question"
+    }
+  ]
+}

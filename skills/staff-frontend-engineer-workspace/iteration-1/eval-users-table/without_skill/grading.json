@@ -1,0 +1,50 @@
+{
+  "expectations": [
+    {
+      "text": "Response has three sections: Architecture Overview, Code Implementation, Review Points",
+      "passed": false,
+      "evidence": "The response has sections like '타입 정의', '커스텀 훅', '디바운스 훅', '컴포넌트 구현', 'API Route', '파일 구조', '주요 기능 요약', '사용 방법'. There is no 'Architecture Overview' section, no 'Code Implementation' section, and no 'Review Points' section. The structure does not match the expected three-section format."
+    },
+    {
+      "text": "Types/Schemas, Hooks, and Components are separated into distinct files or clearly labeled sections",
+      "passed": true,
+      "evidence": "Types are in '타입 정의' section (types/user.ts), hooks are in '커스텀 훅' (hooks/use-users.ts) and '디바운스 훅' (hooks/use-debounce.ts) sections, and components are in '컴포넌트 구현' section with separate files (search-input.tsx, role-filter.tsx, pagination.tsx, role-badge.tsx, users-table.tsx). Clear separation is maintained."
+    },
+    {
+      "text": "No usage of 'any' type in TypeScript code",
+      "passed": true,
+      "evidence": "Searched all code blocks in the response. No instance of the 'any' type is used anywhere. All types are properly defined with specific interfaces and type aliases."
+    },
+    {
+      "text": "Uses shadcn/ui components (e.g., Table, Input, Select)",
+      "passed": false,
+      "evidence": "The response uses native HTML elements throughout: <table>, <input>, <select> with custom Tailwind classes. No shadcn/ui component imports (e.g., from '@/components/ui/table', '@/components/ui/input', '@/components/ui/select') are present anywhere in the code."
+    },
+    {
+      "text": "Each code block includes a file path comment",
+      "passed": true,
+      "evidence": "Every code block starts with a file path comment: '// types/user.ts', '// hooks/use-users.ts', '// hooks/use-debounce.ts', '// components/users/search-input.tsx', '// components/users/role-filter.tsx', '// components/users/pagination.tsx', '// components/users/role-badge.tsx', '// components/users/users-table.tsx', '// app/users/page.tsx', '// app/api/users/route.ts'."
+    },
+    {
+      "text": "Uses TanStack Query (useQuery or useSuspenseQuery) for data fetching",
+      "passed": false,
+      "evidence": "The data fetching in hooks/use-users.ts uses raw fetch with useState/useEffect/useCallback. There is no import or usage of @tanstack/react-query, useQuery, or useSuspenseQuery anywhere in the code."
+    },
+    {
+      "text": "Search, pagination, and filter logic are encapsulated in custom hooks",
+      "passed": true,
+      "evidence": "The useUsers hook (hooks/use-users.ts) encapsulates search (setSearch with page reset), pagination (setPage, page, pageSize, totalPages), and filter (setRole with page reset) logic. The useDebounce hook handles debouncing. All state management and data fetching logic is contained within these hooks."
+    },
+    {
+      "text": "Uses Zod schema for API response validation",
+      "passed": false,
+      "evidence": "No Zod import or schema definition appears anywhere in the response. The API response is typed with 'const data: UsersResponse = await response.json()' using a TypeScript interface cast, not runtime Zod validation."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 4,
+    "total": 8,
+    "pass_rate": 0.5
+  }
+}
