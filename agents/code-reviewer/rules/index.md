@@ -2,7 +2,7 @@
 
 Mapping from detection signals to the rules file you must Read before reviewing.
 
-The "Rules file" column lists filenames inside this `rules/` directory. On any installed machine, the directory is reachable at `~/.claude/agents/post-change-code-reviewer/rules/` thanks to the installer's symlink (see the agent body's Path Convention section). To construct the absolute path for the Read tool, prefix the filename with that directory and expand `~` to `$HOME` first.
+The "Rules file" column lists filenames inside this `rules/` directory. On any installed machine, the directory is reachable at `~/.claude/agents/code-reviewer/rules/` thanks to the installer's symlink (see the agent body's Path Convention section). To construct the absolute path for the Read tool, prefix the filename with that directory and expand `~` to `$HOME` first.
 
 When detecting the stack, treat signals as additive: a single repo can match multiple stacks (e.g. Next.js + TypeScript + Python backend). Read **every** matched rules file and apply them to the relevant files in the diff.
 
@@ -19,7 +19,7 @@ When detecting the stack, treat signals as additive: a single repo can match mul
 ## How to use during a review
 
 1. After Step 1 (diff scope) and Step 2 (stack detection), look up each detected stack in the table above.
-2. Build the absolute path as `$HOME/.claude/agents/post-change-code-reviewer/rules/<filename>` and pass it to the Read tool.
+2. Build the absolute path as `$HOME/.claude/agents/code-reviewer/rules/<filename>` and pass it to the Read tool.
 3. For each changed file, apply the rules from its matching stack. A file in `app/api/route.ts` should be reviewed against both `react-nextjs.md` and `typescript.md`.
 4. If the diff touches a stack that has **no** rules file here, state the assumption explicitly in your review and fall back to the universal rules in the agent body.
 
