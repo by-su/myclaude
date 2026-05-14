@@ -24,7 +24,7 @@ tools:
 | 모드 | 설명 |
 |------|------|
 | **auto** | Stage 1-6 전체를 사용자 개입 없이 자동 실행 |
-| **review** | Stage 1-5까지 각 단계 완료 후 사용자 승인을 받고 다음 단계 진행. Stage 6(빌드)부터는 자동 |
+| **review** | Stage 1·2·3·4·4.5·5 완료 후 사용자 승인을 받고 다음 단계 진행. Stage 5.5·6(빌드)부터는 자동 |
 
 사용자가 모드를 명시하지 않으면 **review**를 기본값으로 사용한다.
 
@@ -58,6 +58,7 @@ mkdir -p "$RUN_DIR"/{research,ideas,prd,palette,design,design-guide,app,logs}
 [Stage 4]   prd-writer                PRD 작성
               ↓ (review: 승인 대기)
 [Stage 4.5] color-palette-recommender 컬러 팔레트 (스킬, 선택)
+              ↓ (review: 승인 대기)
 [Stage 5]   designer                  와이어프레임
               ↓ (review: 승인 대기)
 [Stage 5.5] design-guide-extractor    디자인 가이드 (스킬, 선택)
@@ -76,7 +77,7 @@ mkdir -p "$RUN_DIR"/{research,ideas,prd,palette,design,design-guide,app,logs}
 
 ### 4.2 review 모드 — 승인 게이트
 
-review 모드에서는 **Stage 1, 2, 3, 4, 5 완료 후** 사용자에게 산출물 요약을 보여주고 승인을 받는다.
+review 모드에서는 **Stage 1, 2, 3, 4, 4.5, 5 완료 후** 사용자에게 산출물 요약을 보여주고 승인을 받는다.
 
 **승인 게이트 동작:**
 
@@ -97,6 +98,7 @@ review 모드에서는 **Stage 1, 2, 3, 4, 5 완료 후** 사용자에게 산출
 | 2 (아이디어) | 통과된 아이디어 목록 (제목, 요약, 핵심 반론), 탈락 사유 요약 |
 | 3 (검증) | 아이디어별 차별화 점수, 실현성 점수, 주요 경쟁사, 최종 판정 |
 | 4 (PRD) | 아이디어별 PRD 핵심 요약 (문제, 타깃, MVP 기능 목록, 성공 지표) |
+| 4.5 (팔레트) | 아이디어별 팔레트 3종(이름·HEX·무드 키워드), 추천 팔레트와 근거. 스킵된 트랙은 표시 |
 | 5 (와이어프레임) | 아이디어별 화면 수, 플로우 구조, 팔레트 적용 여부 |
 
 **수정 요청 처리:**
@@ -130,7 +132,7 @@ review 모드에서는 **Stage 1, 2, 3, 4, 5 완료 후** 사용자에게 산출
 통과 아이디어가 여러 개면 **Task를 동시에 호출**해 병렬 실행한다.
 각 트랙은 독립적이며, 한 트랙 실패가 다른 트랙에 영향 없다.
 
-**review 모드 특이사항:** Stage 4, 5는 모든 트랙이 완료된 후 한 번에 요약을 보여주고 승인받는다 (트랙별로 따로 묻지 않는다).
+**review 모드 특이사항:** Stage 4, 4.5, 5는 모든 트랙이 완료된 후 한 번에 요약을 보여주고 승인받는다 (트랙별로 따로 묻지 않는다). Stage 4.5가 모든 트랙에서 스킵되면 게이트도 스킵하고 Stage 5로 진행한다.
 
 **각 트랙 내부 순서:**
 
@@ -142,7 +144,8 @@ Stage 4: prd-writer
 Stage 4.5: color-palette-recommender (스킬)
   → PRD의 domain·target 기반으로 팔레트 3종 생성
   → 산출물: palette/{idea_id}/PALETTES.md
-  → 실패 시 건너뜀 (선택 단계)
+  → 실패 시 건너뜀 (선택 단계). review 모드에선 게이트 요약에 "skipped"로 표시
+  → review 모드: 모든 트랙 완료 후 승인 게이트. "수정 요청" 시 톤·무드 피드백을 추가해 재호출
 
 Stage 5: designer
   → 팔레트 존재 시 색상 반영, 없으면 그레이스케일
