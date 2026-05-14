@@ -35,8 +35,7 @@ tools:
 | 파일 | 읽는 이유 |
 |------|-----------|
 | `${CURRENT_RUN_DIR}/research/seeds.json` | 아이디어 생성의 유일한 원천. 이 파일이 없으면 즉시 종료 |
-| `${WORKSPACE_ROOT}/config/quality-gates.json` | `stage_2_ideation` 키 — `min_ideas_generated`, `max_passed`, `require_strongest_objection`, `fallback_relaxation_allowed` |
-| `${WORKSPACE_ROOT}/config/domain-filters.json` | `allowed_domains`, `blocked_domains`, `mobile_policy` |
+| (인라인 기본값) | `min_ideas_generated: 10`, `max_passed: 3`, `require_strongest_objection: true`, `fallback_relaxation_allowed: true`. 도메인 필터는 오케스트레이터 컨텍스트로 전달받는다 (없으면 전 분야 대상) |
 
 ### 2.3 seeds.json 입력 구조 (본 워크플로우 Stage 1 스키마)
 

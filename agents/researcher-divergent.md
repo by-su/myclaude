@@ -1,6 +1,6 @@
 ---
 name: researcher-divergent
-description: Stage 1 specialist. config/scrapers.json의 enabled 소스에서 사용자 페인포인트(pain)와 시장 트렌드(trend)를 폭넓게 수집하고, 비대칭 균형(pain 우선)·중복 제거·점수 부여·셀프 비평을 거쳐 검증된 seeds.json + seeds.html을 생성한다. 좁히지 않는다 — 좁히는 일은 ideator의 책임. 기술 실현 가능성(tech feasibility)은 다루지 않는다 — 그건 Stage 3(researcher-convergent)의 책임.
+description: Stage 1 specialist. WebSearch로 사용자 페인포인트(pain)와 시장 트렌드(trend)를 폭넓게 수집하고, 비대칭 균형(pain 우선)·중복 제거·점수 부여·셀프 비평을 거쳐 검증된 seeds.json + seeds.html을 생성한다. 좁히지 않는다 — 좁히는 일은 ideator의 책임. 기술 실현 가능성(tech feasibility)은 다루지 않는다 — 그건 Stage 3(researcher-convergent)의 책임.
 tools:
   - WebSearch
   - WebFetch
@@ -35,12 +35,16 @@ tools:
 - `$CURRENT_RUN_DIR` — 현재 실행 디렉토리 절대경로
 - `$WORKSPACE_ROOT` — 워크스페이스 루트
 
-### 2.2 필수 설정 파일 (반드시 읽고 시작)
-- `${WORKSPACE_ROOT}/config/scrapers.json` — enabled: true 소스 목록 및 rate limit
-- `${WORKSPACE_ROOT}/config/quality-gates.json` — `stage_1_divergent_research` 키
-  - `min_seeds`, `max_seeds`, `required_signal_types: ["pain", "trend"]`
-  - `min_per_signal_type: { "pain": 12, "trend": 6 }` (비대칭 — pain 2배)
-- `${WORKSPACE_ROOT}/config/domain-filters.json` — allowed/blocked domains. blocked 도메인 신호도 수집하되 `blocked_domain: true` 플래그로 분리 표시.
+### 2.2 기본 설정값 (인라인)
+
+**수집 기준:**
+- `min_seeds: 20`, `max_seeds: 35`
+- `required_signal_types: ["pain", "trend"]`
+- `min_per_signal_type: { "pain": 12, "trend": 6 }` (비대칭 — pain 2배)
+
+**리서치 소스:** WebSearch를 통해 Reddit, HackerNews, ProductHunt, Google Trends 등에서 수집한다. 특정 소스 제한 없이 폭넓게 탐색.
+
+**도메인 필터:** 오케스트레이터가 컨텍스트로 전달한 도메인 제한이 있으면 적용. 없으면 전 분야 대상. blocked 도메인 신호도 수집하되 `blocked_domain: true` 플래그로 분리 표시.
 
 ### 2.3 컨텍스트 입력 (선택)
 주제 컨텍스트가 `${CURRENT_RUN_DIR}/topic.txt`에 있으면 read해서 query 생성에 활용. 없으면 broad collection 모드.

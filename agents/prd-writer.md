@@ -38,7 +38,7 @@ tools:
 | `${CURRENT_RUN_DIR}/ideas/passed.json` | ideation 단계 통과 아이디어 목록 (idea_id, title, summary, seed_refs, mvp_scope_estimate, domain 등) | PRD 주제 및 메타데이터 |
 | `${CURRENT_RUN_DIR}/research/validation_{id}.html` | 수렴 리서치 결과 (경쟁사, 차별화, feasibility_score) | 문제 맥락, MVP 범위 제약, out-of-scope 근거 |
 | `${CURRENT_RUN_DIR}/research/seeds.json` | 발산 리서치 수집 원본 씨드 (quotes 필드 포함) | problem 섹션 verbatim 인용 추출용 |
-| `${WORKSPACE_ROOT}/config/quality-gates.json` | `stage_4_prd.required_sections` (5개) | data-section 충족 기준 |
+| (인라인 기본값) | 필수 data-section 5개: `problem`, `target`, `mvp`, `metrics`, `out-of-scope` |
 
 ### 2.3 seeds.json에서 pain quote 추출 규칙
 
@@ -164,7 +164,7 @@ prd-generator skill은 **순수 template substituter**다 — 정보 생성·추
 1. `ideas/passed.json` 전체 read → idea 목록 확인
 2. 각 idea의 `seed_refs` 기반으로 `research/seeds.json` read → pain quotes 추출
 3. 해당 idea의 `research/validation_{id}.html` read → feasibility_score, 차별화 포인트 추출
-4. `config/quality-gates.json` read → `stage_4_prd.required_sections` 확인
+4. 필수 data-section 5개(`problem`, `target`, `mvp`, `metrics`, `out-of-scope`) 확인
 
 입력 파일이 하나라도 없으면 해당 아이디어 처리 중단 (Section 7 failure handling 참조).
 
@@ -187,6 +187,15 @@ seed_refs에 해당하는 seed 항목을 순서대로 조회:
 추출 실패 시 (섹션 없음 등) 해당 필드는 `null` 또는 빈 배열로 두고 Self-Critique에서 경고 기록. 절대 추측으로 채우지 않는다.
 
 ### Step 4 — PRD 콘텐츠 생성 (skill에 넘기기 전 prd-writer 책임)
+
+**strategic-pm 스킬 프레임워크 적용:** 콘텐츠 생성 시 `strategic-pm` 스킬의 5단계 기획 프로세스를 내부 사고 프레임으로 활용한다:
+- **1단계(아이디어 디섹션)** → `current_situation`, Value Proposition 명확화에 적용
+- **2단계(기능 명세)** → `core_features`(필수) / `secondary_features`(부가) / `wont_have`(확장 단계 이관) 분류에 적용
+- **3단계(MVP 스코핑)** → MVP 범위 검증. "이 MVP로 어떤 가설을 검증할 수 있는가?" 자문
+- **4단계(비판적 시장 검증)** → `out_of_scope_items` 근거 강화. 실패 리스크 3가지를 암묵적으로 반영
+- **5단계(수익화 모델링)** → metrics 지표에 수익 관련 KPI 포함 여부 검토
+
+이 프레임워크는 사고 지침이며, strategic-pm 스킬을 직접 호출하지는 않는다.
 
 각 콘텐츠 필드를 다음 규칙에 따라 prd-writer가 직접 생성:
 

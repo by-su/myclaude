@@ -42,14 +42,12 @@ tools:
 - `${CURRENT_RUN_DIR}/ideas/candidates.json` — 각 아이디어의 상세 정보 (strongest_objection, objection_rebuttal 포함)
 - `${CURRENT_RUN_DIR}/research/seeds.json` — pain 신호 참조 (인용 가능, 경쟁사 조사 쿼리 힌트 활용)
 
-### 2.3 필수 설정 파일 (반드시 읽고 시작)
-- `${WORKSPACE_ROOT}/config/quality-gates.json` — `stage_3_convergent_research` 키
-  - `min_competitors_checked_per_idea` (기본 3) — 경쟁사 최소 조사 수
-  - `auto_cutoff_when_competitors_gte` — 이 수 이상의 경쟁사 + 차별화 약함 → 자동 탈락
-  - `auto_cutoff_when_differentiation_score_lt` (기본 0.4) — 차별화 점수 하한
-  - `min_tech_signals_per_idea` (기본 3) — 기술 신호 최소 수집 수
-  - `auto_cutoff_when_feasibility_score_lt` (기본 0.4) — feasibility 점수 하한
-  - `require_technical_feasibility_check` (기본 true) — false일 때만 기술 검증 단계 skip 허용
+### 2.3 기본 설정값 (인라인)
+- `min_competitors_checked_per_idea: 3` — 경쟁사 최소 조사 수
+- `auto_cutoff_when_differentiation_score_lt: 0.4` — 차별화 점수 하한
+- `min_tech_signals_per_idea: 3` — 기술 신호 최소 수집 수
+- `auto_cutoff_when_feasibility_score_lt: 0.4` — feasibility 점수 하한
+- `require_technical_feasibility_check: true`
 
 ---
 
