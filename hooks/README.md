@@ -11,9 +11,10 @@ $HOME/.claude/hooks/<script>.sh
 
 ## 스크립트 목록
 
-| 스크립트 | 이벤트 | 역할 |
-| --- | --- | --- |
-| `auto-code-review.sh` | `Stop` | 이번 턴에서 Edit/Write/MultiEdit 으로 파일이 수정되었고 아직 `code-reviewer` 서브에이전트가 호출되지 않았다면, 응답 종료를 막고 리뷰를 강제 호출하도록 지시한다. 단순 질문·읽기 전용 작업에는 침묵. |
+| 스크립트 | 스코프 | 이벤트 | 역할 |
+| --- | --- | --- | --- |
+| `auto-code-review.sh` | user (`~/.claude/settings.json`) | `Stop` | 이번 턴에서 Edit/Write/MultiEdit 으로 파일이 수정되었고 아직 `code-reviewer` 서브에이전트가 호출되지 않았다면, 응답 종료를 막고 리뷰를 강제 호출하도록 지시한다. 모든 프로젝트에서 동작. 단순 질문·읽기 전용 작업에는 침묵. |
+| `auto-readme-sync.sh` | project (`<repo>/.claude/settings.json`) | `Stop` | myclaude 레포 한정. 레포 내부 파일을 수정했는데 `ReadMe.md` 가 갱신되지 않았으면 응답 종료를 막고 ReadMe 동기화를 강제한다. `$CLAUDE_PROJECT_DIR` 로 레포 루트를 식별. |
 
 ## 동작 원리 (auto-code-review.sh)
 
@@ -42,6 +43,8 @@ $HOME/.claude/hooks/<script>.sh
 
 ## 새 hook 추가하기
 
-1. `hooks/<name>.sh` 를 작성하고 `chmod +x`.
-2. `setup/init/install.sh` 의 settings.json 패치 블록을 따라 새 항목을 등록 (jq merge).
-3. `hooks/README.md` 표에 한 줄 추가.
+1. `hooks/<name>.sh` 를 작성하고 `chmod +x`. 항상 `exit 0` 으로 빠질 수 있게 방어적으로 짠다.
+2. 스코프 결정:
+   - **user-scope** (모든 프로젝트에서 발동): `setup/init/install.sh` 의 jq 패치 블록을 따라 `~/.claude/settings.json` 의 `hooks.<Event>` 배열에 idempotent 하게 추가.
+   - **project-scope** (이 레포에서만 발동): `<repo>/.claude/settings.json` 의 `hooks.<Event>` 배열에 직접 추가. 명령 경로는 `$CLAUDE_PROJECT_DIR/hooks/<name>.sh` 로 작성하면 어디서 clone 해도 동작.
+3. `hooks/README.md` 표와 루트 `ReadMe.md` 의 "Hook 목록" 에 한 줄씩 추가.
