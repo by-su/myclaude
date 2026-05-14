@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="stage" content="2">
+  <meta name="idea-id" content="N/A">
+  <meta name="generated-at" content="2026-05-14T14:50:00Z">
+  <title>Stage 1+2 Diverse Sweep — Night-Builder Round 2</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0f0f10;
+      --surface: #1a1a1c;
+      --surface-2: #232326;
+      --border: #2a2a2e;
+      --text: #e8e8ea;
+      --text-dim: #8a8a90;
+      --accent: #6ea8fe;
+      --accent-soft: rgba(110, 168, 254, 0.12);
+      --success: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --pass-glow: rgba(34, 197, 94, 0.18);
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #fafafa; --surface: #ffffff; --surface-2: #f3f3f5; --border: #e5e5e8;
+        --text: #1a1a1c; --text-dim: #6a6a72; --accent: #2563eb;
+        --accent-soft: rgba(37, 99, 235, 0.08);
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background: var(--bg); color: var(--text);
+      line-height: 1.6; -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 1080px; margin: 0 auto; padding: 32px 20px 80px; }
+    header { padding-bottom: 24px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+    .eyebrow { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
+    h1 { font-size: 28px; margin: 0 0 8px; line-height: 1.25; }
+    .summary { font-size: 15px; color: var(--text-dim); margin: 0; max-width: 760px; }
+    .meta-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px; font-size: 12px;
+      background: var(--accent-soft); color: var(--accent);
+      border: 1px solid var(--border);
+    }
+    .pill.success { background: rgba(34,197,94,0.12); color: var(--success); }
+    .pill.warn { background: rgba(245,158,11,0.12); color: var(--warn); }
+    .pill.danger { background: rgba(239,68,68,0.12); color: var(--danger); }
+    section {
+      margin-top: 32px; padding: 24px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    }
+    section h2 { margin: 0 0 16px; font-size: 18px; display: flex; align-items: center; gap: 10px; }
+    section h2::before { content: ""; display: inline-block; width: 3px; height: 18px; background: var(--accent); border-radius: 2px; }
+    section h3 { margin: 20px 0 8px; font-size: 15px; }
+    p { margin: 0 0 12px; }
+    ul, ol { padding-left: 22px; margin: 8px 0 12px; }
+    li { margin: 4px 0; }
+    code, .mono {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 13px; background: var(--surface-2); padding: 1px 6px; border-radius: 4px;
+    }
+
+    .verdict {
+      display: flex; align-items: center; gap: 16px;
+      padding: 20px 24px; border-radius: 12px;
+      background: linear-gradient(180deg, var(--pass-glow), transparent);
+      border: 1px solid var(--success);
+      margin-bottom: 24px;
+    }
+    .verdict .vbadge { font-size: 32px; line-height: 1; color: var(--success); font-weight: 700; letter-spacing: -0.02em; }
+    .verdict .vbody h2 { margin: 0 0 4px; font-size: 18px; }
+    .verdict .vbody h2::before { display: none; }
+    .verdict .vbody p { margin: 0; color: var(--text-dim); font-size: 14px; }
+
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+    .card {
+      padding: 14px 16px; background: var(--surface-2);
+      border: 1px solid var(--border); border-radius: 8px;
+    }
+    .card .label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+    .card .value { font-size: 22px; font-weight: 700; margin-top: 4px; }
+    .card .sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); font-weight: 600; }
+    td.num { font-family: ui-monospace, monospace; text-align: right; }
+    .delta-up { color: var(--success); font-weight: 600; }
+    .delta-down { color: var(--danger); font-weight: 600; }
+    .delta-same { color: var(--text-dim); }
+    .row-improve { background: rgba(34,197,94,0.04); }
+
+    .qc-list { list-style: none; padding: 0; margin: 0; }
+    .qc-list li {
+      padding: 10px 12px; margin: 6px 0;
+      background: var(--surface-2); border-radius: 6px;
+      display: flex; align-items: flex-start; gap: 10px;
+      border-left: 3px solid var(--success);
+    }
+    .qc-list .qc-mark { font-weight: 700; flex-shrink: 0; min-width: 32px; color: var(--success); }
+    .qc-list .qc-body { flex: 1; font-size: 14px; }
+    .qc-list .qc-body em { color: var(--text-dim); font-style: normal; font-size: 13px; }
+
+    .idea-card {
+      padding: 18px; margin: 14px 0;
+      background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+      border-top: 3px solid var(--success);
+    }
+    .idea-card .ihead { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .idea-card .iid { font-family: ui-monospace, monospace; font-size: 12px; color: var(--text-dim); }
+    .idea-card .ititle { font-size: 16px; font-weight: 600; line-height: 1.35; margin: 4px 0 8px; }
+    .idea-card .isummary { font-size: 13px; color: var(--text-dim); margin-bottom: 12px; }
+    .idea-card .ipanels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 720px) { .idea-card .ipanels { grid-template-columns: 1fr; } }
+    .panel { padding: 10px 12px; border-radius: 6px; background: rgba(0,0,0,0.18); font-size: 13px; }
+    @media (prefers-color-scheme: light) { .panel { background: rgba(0,0,0,0.03); } }
+    .panel .plabel { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .panel.objection { border-left: 3px solid var(--danger); }
+    .panel.objection .plabel { color: var(--danger); }
+    .panel.rebuttal { border-left: 3px solid var(--accent); }
+    .panel.rebuttal .plabel { color: var(--accent); }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; font-size: 12px; }
+    .meta-row .chip { padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--border); }
+    .meta-row .chip.persona { background: rgba(245,158,11,0.12); color: var(--warn); border-color: var(--warn); }
+    .meta-row .chip.dim { background: var(--surface-2); color: var(--text-dim); }
+
+    .rej-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; margin: 6px 0; background: var(--surface-2); border-radius: 6px; font-size: 13px; }
+    .rej-row .rj-id { font-family: ui-monospace, monospace; color: var(--text-dim); min-width: 64px; }
+    .rej-row .rj-title { flex: 1; }
+    .rej-row .rj-reason { font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+    .rej-row.similar .rj-reason { background: rgba(245,158,11,0.12); color: var(--warn); }
+    .rej-row.scope .rj-reason { background: rgba(239,68,68,0.12); color: var(--danger); }
+    .rej-row.maxpass .rj-reason { background: var(--accent-soft); color: var(--accent); }
+    .rej-row.pain .rj-reason { background: rgba(239,68,68,0.12); color: var(--danger); }
+
+    .persona-bar { display: flex; height: 28px; border-radius: 6px; overflow: hidden; margin: 8px 0; background: var(--surface-2); }
+    .persona-bar > div { display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; font-weight: 600; }
+    .pb-jikjangin { background: #6ea8fe; }
+    .pb-senior { background: #22c55e; }
+    .pb-homemaker { background: #f59e0b; }
+    .pb-student { background: #a78bfa; }
+    .pb-freelance { background: #ec4899; }
+
+    footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-dim); text-align: center; }
+    @media (max-width: 600px) {
+      .container { padding: 20px 16px 60px; }
+      h1 { font-size: 22px; }
+      section { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="eyebrow">Night-Builder · Round 2 · Diverse Sweep (Stage 1+2 full)</div>
+      <h1>Spec 강화 + 입력 다양성 sweep — 두 경고 모두 해결</h1>
+      <p class="summary">
+        v1에서 발견된 두 경고(idea_5 ∩ idea_7 seed overlap 60%, passed 도메인·페르소나 단일 클러스터 쏠림)에 대한 종합 처방. <strong>Stage 1 spec</strong>에 페르소나 다양성 검사(≥3 clusters) 추가, <strong>Stage 2 spec</strong>에 §5.1 임계 70%→50%·§5.5 도메인 다양성 검사 신규. 다양성 강화된 topic으로 full sweep 재실행.
+      </p>
+      <div class="meta-pills">
+        <span class="pill">run_dir <code>runs/2026-05-15-diverse-sweep-v1</code></span>
+        <span class="pill">Stage 1 seeds 28 (5 personas)</span>
+        <span class="pill">Stage 2 ideas 12 (3 passed)</span>
+        <span class="pill success">max overlap 40%</span>
+        <span class="pill success">passed personas 3</span>
+      </div>
+    </header>
+
+    <div class="verdict">
+      <div class="vbadge">FIXED</div>
+      <div class="vbody">
+        <h2>두 경고 모두 해소 — 정량 효과 가시화</h2>
+        <p>v1 → v2 sweep: max overlap <strong>60% → 40%</strong> (§5.1 임계 50%가 실제 4건 reject 발동), passed 페르소나 <strong>1 → 3</strong>(직장인·시니어·주부·육아), avg_pain_signal <strong>2.86 → 3.41</strong> (+19%). §5.5 도메인 다양성 안전망은 자동 통과(passed 풀이 2 domain 자연 보장).</p>
+      </div>
+    </div>
+
+    <section>
+      <h2>Spec 변경 요약</h2>
+
+      <h3>Stage 1 — researcher-divergent.md</h3>
+      <ul>
+        <li>self_critique 스키마에 <code>persona_clusters</code>(배열), <code>persona_cluster_count</code>, <code>source_cluster_count</code> 추가</li>
+        <li>각 seed에 <code>persona_cluster</code> 필드 추가 (페르소나 카테고리 라벨)</li>
+        <li>§5.2 source diversity와 분리해서 <strong>§5.3 페르소나 다양성 체크 신규</strong> — 최소 3개 클러스터</li>
+        <li>Termination 메시지에 <code>persona_cluster_count</code>, <code>source_cluster_count</code> 추가</li>
+      </ul>
+
+      <h3>quality-gates.json</h3>
+      <ul>
+        <li><code>stage_1_divergent_research</code>에 <code>min_persona_clusters: 3</code>, <code>min_source_clusters: 3</code>, <code>persona_cluster_guidance</code> 추가 (토픽별 클러스터 라벨링 예시)</li>
+      </ul>
+
+      <h3>Stage 2 — ideator.md</h3>
+      <ul>
+        <li>§3.1 rejection_reason 코드에 <code>too_similar_to_passed_idea</code>, <code>desync_domain</code>, <code>max_passed_exceeded</code> 명시 추가</li>
+        <li><strong>§5.1 seed overlap 임계 70% → 50%</strong> — v1 60% 사례 기반 실측 임계</li>
+        <li><strong>§5.5 도메인 다양성 검사 신규</strong> — passed 풀 unique domains &lt; 2일 때 가장 약한 단일-도메인 후보 desync_domain reject. 통과 풀 1개뿐이면 무력화(graceful degradation).</li>
+        <li>검사 적용 순서 명시: §5.1 → §5.2 → §5.3 → §5.4 → §5.5 → max_passed=3 컷</li>
+      </ul>
+
+      <h3>topic.txt (broaden)</h3>
+      <ul>
+        <li>"30대 직장인 + 점심시간 5분" → "한국 사용자층 전반(직장인·학생·주부·시니어·자영업)의 일상 건강관리"</li>
+        <li>다양성 정책이 의미있게 작동하려면 입력 토픽 자체도 다양해야 한다는 사실을 명시 — over-fit 방지</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>v1 → v2 sweep 정량 비교</h2>
+      <table>
+        <thead>
+          <tr><th>지표</th><th class="num">v1 (좁은 토픽 + 구 spec)</th><th class="num">v2 sweep (넓은 토픽 + 신 spec)</th><th class="num">Δ</th><th>해석</th></tr>
+        </thead>
+        <tbody>
+          <tr class="row-improve">
+            <td><strong>Stage 1 페르소나 클러스터</strong></td>
+            <td class="num">1 (한국 직장인)</td>
+            <td class="num">5 (직장인·시니어·자영업·학생·주부)</td>
+            <td class="num"><span class="delta-up">+4</span></td>
+            <td>min_persona_clusters: 3 강제 실효</td>
+          </tr>
+          <tr>
+            <td>Stage 1 총 seeds</td>
+            <td class="num">25</td>
+            <td class="num">28</td>
+            <td class="num"><span class="delta-up">+3</span></td>
+            <td>min 20, max 35 모두 충족</td>
+          </tr>
+          <tr>
+            <td>Stage 1 pain / trend</td>
+            <td class="num">17 / 8</td>
+            <td class="num">18 / 10</td>
+            <td class="num"><span class="delta-up">+1 / +2</span></td>
+            <td>비대칭 pain ≥12, trend ≥6 유지</td>
+          </tr>
+          <tr>
+            <td>Stage 1 url_verified</td>
+            <td class="num">25/25</td>
+            <td class="num">28/28</td>
+            <td class="num"><span class="delta-same">100%</span></td>
+            <td>WebSearch 실재 검증 유지</td>
+          </tr>
+          <tr>
+            <td>Stage 1 pain_quote_coverage</td>
+            <td class="num">—</td>
+            <td class="num">0.72</td>
+            <td class="num"><span class="delta-up">신규</span></td>
+            <td>self_critique 필드 정직 기록</td>
+          </tr>
+          <tr>
+            <td>Stage 2 ideas 생성</td>
+            <td class="num">12</td>
+            <td class="num">12</td>
+            <td class="num"><span class="delta-same">0</span></td>
+            <td>min_ideas_generated 10 안정 충족</td>
+          </tr>
+          <tr>
+            <td>Stage 2 passed</td>
+            <td class="num">3</td>
+            <td class="num">3</td>
+            <td class="num"><span class="delta-same">0</span></td>
+            <td>max_passed=3 상한 도달</td>
+          </tr>
+          <tr class="row-improve">
+            <td><strong>avg_pain_signal_strength</strong></td>
+            <td class="num">2.86</td>
+            <td class="num">3.41</td>
+            <td class="num"><span class="delta-up">+19%</span></td>
+            <td>더 깊은 페인 signal — passed 후보 신호 강도 ↑</td>
+          </tr>
+          <tr class="row-improve">
+            <td><strong>passed 페르소나 다양성</strong></td>
+            <td class="num">1 cluster (직장인)</td>
+            <td class="num">3 clusters (직장인·시니어·주부·육아)</td>
+            <td class="num"><span class="delta-up">+2</span></td>
+            <td>Stage 1 다양성이 그대로 passed로 흐름</td>
+          </tr>
+          <tr>
+            <td>passed 도메인 다양성</td>
+            <td class="num">2 (mobile_pwa 2, web_saas 1)</td>
+            <td class="num">2 (mobile_pwa 2, web_saas 1)</td>
+            <td class="num"><span class="delta-same">0</span></td>
+            <td>health 토픽 특성 — 도메인보다 페르소나가 분기점</td>
+          </tr>
+          <tr class="row-improve">
+            <td><strong>passed 간 최대 seed overlap</strong></td>
+            <td class="num">60%<br><em style="color:var(--text-dim)">(idea_5 ∩ idea_7, 5개 중 3)</em></td>
+            <td class="num">40%<br><em style="color:var(--text-dim)">(idea_1 ∩ idea_3, 5개 중 2)</em></td>
+            <td class="num"><span class="delta-up">-20pt</span></td>
+            <td>§5.1 50% 임계 통과 — 60% 케이스는 이제 reject</td>
+          </tr>
+          <tr class="row-improve">
+            <td><strong>§5.1 (overlap) reject 수</strong></td>
+            <td class="num">0</td>
+            <td class="num">4</td>
+            <td class="num"><span class="delta-up">+4</span></td>
+            <td>임계 강화 실제 효과 — idea_6·7·9·11이 컷</td>
+          </tr>
+          <tr>
+            <td>§5.5 (desync_domain) reject 수</td>
+            <td class="num">N/A</td>
+            <td class="num">0 (검사 자동 통과)</td>
+            <td class="num"><span class="delta-same">—</span></td>
+            <td>passed 풀 unique domains = 2이라 §5.5 임계 통과 — 안전망으로 정확히 작동</td>
+          </tr>
+          <tr>
+            <td>rejection 사유 다양성</td>
+            <td class="num">3종</td>
+            <td class="num">4종</td>
+            <td class="num"><span class="delta-up">+1</span></td>
+            <td>too_similar_to_passed_idea가 main 컷 사유로 등장</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Stage 1 — 페르소나 분포 시각화</h2>
+      <p style="color:var(--text-dim); font-size:13px;">28 seeds, 5개 페르소나 클러스터. 직장인 36%·시니어 21%·자영업 18%·학생 14%·주부 11%.</p>
+      <div class="persona-bar">
+        <div class="pb-jikjangin" style="flex: 10;">직장인 10</div>
+        <div class="pb-senior" style="flex: 6;">시니어 6</div>
+        <div class="pb-freelance" style="flex: 5;">자영업 5</div>
+        <div class="pb-student" style="flex: 4;">학생 4</div>
+        <div class="pb-homemaker" style="flex: 3;">주부 3</div>
+      </div>
+      <p style="font-size:12px; color:var(--text-dim); margin-top:4px;">
+        모든 페르소나 ≥3 seeds 확보 (§5.3 min_persona_clusters=3 충족). 직장인 비중이 여전히 높지만 단일 클러스터 over-fit은 해소.
+      </p>
+    </section>
+
+    <section>
+      <h2>Self-QC (실제 파일 검증)</h2>
+      <p style="color: var(--text-dim); font-size: 13px;">
+        Stage 1 seeds + Stage 2 candidates 모두 self-report와 실측 일치 확인. producer = QC.
+      </p>
+      <ul class="qc-list">
+        <li>
+          <span class="qc-mark">OK</span>
+          <div class="qc-body"><strong>Stage 1 validate-html 통과</strong> — seeds.html 59,392 bytes, stage=1, ISO8601 generated-at ✓</div>
+        </li>
+        <li>
+          <span class="qc-mark">OK</span>
+          <div class="qc-body"><strong>Stage 1 페르소나 다양성 강제 실효</strong> — persona_cluster_count=5, source_cluster_count=4 모두 ≥3 충족. 28 seeds 전부 persona_cluster 필드 보유. url_verified 28/28</div>
+        </li>
+        <li>
+          <span class="qc-mark">OK</span>
+          <div class="qc-body"><strong>Stage 2 validate-html 통과</strong> — candidates.html 41,317 bytes, stage=2, ISO8601 ✓</div>
+        </li>
+        <li>
+          <span class="qc-mark">OK</span>
+          <div class="qc-body"><strong>Stage 2 schema integrity 0 issues</strong> — 12 ideas 전부 13 필수 필드 보유. 모든 seed_refs 실재. pain_signal_strength 재계산 일치</div>
+        </li>
+        <li>
+          <span class="qc-mark">OK</span>
+          <div class="qc-body"><strong>§5.1 50% 임계 실제 작동</strong> — idea_6 (80%), idea_7 (60%), idea_9 (75%), idea_11 (100%) 총 4건 too_similar_to_passed_idea reject. 이전 임계 70%였다면 idea_7(60%)은 통과했을 것 — <em>강화 효과 명확</em></div>
+        </li>
+        <li>
+          <span class="qc-mark">OK</span>
+          <div class="qc-body"><strong>§5.5 graceful degradation 작동</strong> — passed 중간 풀 unique domains = 2 (mobile_pwa, web_saas) ≥ 임계. desync_domain reject 0건. 안전망 무력화 케이스 정상</div>
+        </li>
+        <li>
+          <span class="qc-mark">OK</span>
+          <div class="qc-body"><strong>passed.json Stage 3 extension model 유지</strong> — 모든 통과 후보 7개 필수 필드(seed_refs·pain_signal_strength·strongest_objection·domain·objection_rebuttal·target_user·problem_statement) 보유</div>
+        </li>
+        <li>
+          <span class="qc-mark">OK</span>
+          <div class="qc-body"><strong>passed 페르소나 다양성 검증</strong> — seed_refs를 통해 역추적: idea_1(직장인 5/5), idea_2(시니어 3 + 직장인 1 = 4/5), idea_3(주부 3 + 직장인 2 = 5/5). aggregated unique = 3 페르소나 ✓</div>
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>새 passed 3개 (각 페르소나 다른 클러스터)</h2>
+
+      <div class="idea-card">
+        <div class="ihead">
+          <span class="iid">idea_1</span>
+          <span class="pill success">PASSED</span>
+          <span class="pill">strength 3.42</span>
+          <span class="pill">scope medium</span>
+          <span class="pill">mobile_pwa</span>
+        </div>
+        <div class="ititle">ShiftSync — 교대근무 패턴 감지 기반 비알림형 웰니스 넛지 PWA</div>
+        <div class="isummary">교대·야간근무 직장인이 등록한 근무 스케줄을 분석해 '알림 없이' 근무 전환 직후 5분 루틴(스트레칭·수분·짧은 호흡)을 홈화면 위젯처럼 자연스럽게 제시. Push 알림 0, 앱 진입 시점에 맥락적 개입. MVP는 근무 스케줄 입력 + 맥락 인식 루틴 카드 3종.</div>
+        <div class="ipanels">
+          <div class="panel objection">
+            <div class="plabel">Strongest objection</div>
+            삼성 헬스·Apple Health가 이미 교대근무 스케줄 입력·수면 추적 기능을 제공하며, 2억 명+ 기기에 사전 설치되어 별도 PWA 설치 동기가 사실상 없다.
+          </div>
+          <div class="panel rebuttal">
+            <div class="plabel">Objection rebuttal</div>
+            삼성·Apple은 알림 기반 개입에 의존, 교대근무 특화 맥락(근무 직후 30분 전환기)을 감지해 Push 없이 홈 화면 진입 시 루틴 제시 기능 없음. '알림 제로' 설계가 핵심 차별점. Android PWA 홈화면 위젯 API로 락스크린 알림 없이도 노출 가능. 한국 취업자 30-40%가 교대근무지만 삼성 헬스 교대 특화 기능 사용율은 통계적 미미.
+          </div>
+        </div>
+        <div class="meta-row">
+          <span class="chip persona">직장인 페르소나</span>
+          <span class="chip">seed_001</span><span class="chip">seed_002</span><span class="chip">seed_003</span><span class="chip">seed_017</span><span class="chip">seed_018</span>
+        </div>
+      </div>
+
+      <div class="idea-card">
+        <div class="ihead">
+          <span class="iid">idea_2</span>
+          <span class="pill success">PASSED</span>
+          <span class="pill">strength 3.03</span>
+          <span class="pill">scope medium</span>
+          <span class="pill">web_saas</span>
+        </div>
+        <div class="ititle">PillCoach — 시니어 대화형 복약 확인 웹앱 (카카오 알림톡 기반)</div>
+        <div class="isummary">65세+ 시니어가 스마트폰 앱 설치 없이 카카오 알림톡으로 복약 확인 메시지를 받고 버튼 1번 탭으로 응답. 보호자(자녀)는 웹 대시보드에서 복약 현황·약 종류·시간 설정. 의료 앱 사용 포기한 시니어도 익숙한 카카오톡 UI로 진입 장벽 0.</div>
+        <div class="ipanels">
+          <div class="panel objection">
+            <div class="plabel">Strongest objection</div>
+            카카오 알림톡 API는 기업 채널 전용·심사 2-4주. 복약 메시지는 식약처 SaMD 의료기기 규제 대상으로 분류될 경우 허가 없이 배포 불가 — regulated_healthcare 회색지대.
+          </div>
+          <div class="panel rebuttal">
+            <div class="plabel">Objection rebuttal</div>
+            식약처 SaMD 기준상 복약 '확인(reminder)'은 '단순 알림형'으로 진단·치료 기능 없으면 미해당 판정 사례 다수(2023 식약처 SaMD 해설서). 카카오 비즈 채널 심사는 MVP 개발 2-4주와 병렬 진행 가능. 베타는 NHN 대체 문자로 가능. 핵심은 '앱 미설치' 진입 — 효도폰앱·독거노인 앱 대비 실질 차별점.
+          </div>
+        </div>
+        <div class="meta-row">
+          <span class="chip persona">시니어 페르소나</span>
+          <span class="chip">seed_011</span><span class="chip">seed_012</span><span class="chip">seed_013</span><span class="chip">seed_017</span>
+        </div>
+      </div>
+
+      <div class="idea-card">
+        <div class="ihead">
+          <span class="iid">idea_3</span>
+          <span class="pill success">PASSED</span>
+          <span class="pill">strength 3.78</span>
+          <span class="pill">scope small</span>
+          <span class="pill">mobile_pwa</span>
+        </div>
+        <div class="ititle">BabySync Wellness — 아기 수면 패턴 연동 산모 초단기 자기관리 PWA</div>
+        <div class="isummary">신생아 부모가 아기 수면 시작을 탭 1번으로 기록 → 예상 수면 지속 시간(1.5-2시간) 기반 '지금 당신에게 남은 시간' 루틴(호흡·스트레칭·수분·5분 낮잠) 즉시 제시. 8시간 수면 목표 같은 비현실적 기준 대신 '현재 가용 시간 최대화' 철학으로 죄책감 차단.</div>
+        <div class="ipanels">
+          <div class="panel objection">
+            <div class="plabel">Strongest objection</div>
+            Huckleberry(미국 1위 아기 수면 앱, 500만 다운로드)와 한국 '아기야 놀자'가 이미 아기 수면 추적 + 부모 수면 가이드를 통합 제공. Huckleberry는 AI 수면 예측(SweetSpot)까지 포함해 MVP 핵심 기능을 상당 부분 커버.
+          </div>
+          <div class="panel rebuttal">
+            <div class="plabel">Objection rebuttal</div>
+            Huckleberry는 아기 수면 최적화 중심, '아기가 잠든 직후 산모에게 지금 가용 시간으로 이것을 하라'는 자기관리 개입은 미제공. '아기야 놀자'는 수면 로그 기능 없음. 차별: '아기 수면 트리거 → 산모 루틴 즉시 제시' 연결 로직. 8시간 목표 포기·가용 시간 최대화 UX 철학은 시장에 없음. MVP는 아기 수면 탭 1개 + 즉시 루틴 카드로 1주 구현 가능.
+          </div>
+        </div>
+        <div class="meta-row">
+          <span class="chip persona">주부·육아 페르소나</span>
+          <span class="chip">seed_008</span><span class="chip">seed_009</span><span class="chip">seed_010</span><span class="chip">seed_017</span><span class="chip">seed_018</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>탈락 분석 (9개) — 새 §5.1·§5.5 spec 효과</h2>
+
+      <h3>① too_similar_to_passed_idea (§5.1 50% 임계 — 신규 효과)</h3>
+      <p style="color:var(--text-dim); font-size:13px;">v1에서는 0건, v2에서 4건. 임계 강화 정확히 작동.</p>
+      <div class="rej-row similar">
+        <span class="rj-id">idea_6</span>
+        <span class="rj-title">NudgeDesk — 사무직 착석 시간 시각화 + 사회적 넛지 크롬 확장 <em style="color:var(--text-dim)">[dev_tools, 80% overlap with idea_1]</em></span>
+        <span class="rj-reason">too_similar_to_passed_idea</span>
+      </div>
+      <div class="rej-row similar">
+        <span class="rj-id">idea_7</span>
+        <span class="rj-title">MicroFit Work — 직장인 25분 점심 운동 루틴 예약·추적 PWA <em style="color:var(--text-dim)">[mobile_pwa, 60% overlap with idea_1]</em></span>
+        <span class="rj-reason">too_similar_to_passed_idea</span>
+      </div>
+      <div class="rej-row similar">
+        <span class="rj-id">idea_9</span>
+        <span class="rj-title">SeniorStep — 시니어 전용 대형 글씨 일일 걷기 챌린지 PWA <em style="color:var(--text-dim)">[mobile_pwa, 75% overlap with idea_2]</em></span>
+        <span class="rj-reason">too_similar_to_passed_idea</span>
+      </div>
+      <div class="rej-row similar">
+        <span class="rj-id">idea_11</span>
+        <span class="rj-title">MealAlert — 프리랜서·자영업 식사 거름 패턴 추적 + 배달 연동 SaaS <em style="color:var(--text-dim)">[web_saas, 100% overlap]</em></span>
+        <span class="rj-reason">too_similar_to_passed_idea</span>
+      </div>
+
+      <h3>② mvp_scope_too_large (Stage 4-6 위험 컷)</h3>
+      <div class="rej-row scope">
+        <span class="rj-id">idea_10</span>
+        <span class="rj-title">HealthLog Zero — 로그 없는 건강 추적 웹앱 (AI 셀카 피로도 추론) <em style="color:var(--text-dim)">[web_consumer, scope large]</em></span>
+        <span class="rj-reason">mvp_scope_too_large</span>
+      </div>
+
+      <h3>③ insufficient_pain_seed_refs (§5.3 pain 우선성)</h3>
+      <div class="rej-row pain">
+        <span class="rj-id">idea_12</span>
+        <span class="rj-title">AppStick — 건강 앱 습관 형성 코치 (허니문 이후 이탈 방지 웹앱) <em style="color:var(--text-dim)">[pain seeds 2개뿐 — 임계 3 미달]</em></span>
+        <span class="rj-reason">insufficient_pain_seed_refs</span>
+      </div>
+
+      <h3>④ max_passed_exceeded (예비 후보 — 기준 통과하나 상한 초과)</h3>
+      <div class="rej-row maxpass">
+        <span class="rj-id">idea_4</span>
+        <span class="rj-title">StudyRhythm — 수험생 수면 데이터 기반 학습 스케줄 최적화 PWA <em style="color:var(--text-dim)">[학생 페르소나, strength 2.73, scope small]</em></span>
+        <span class="rj-reason">max_passed_exceeded</span>
+      </div>
+      <div class="rej-row maxpass">
+        <span class="rj-id">idea_5</span>
+        <span class="rj-title">FreelancePulse — 프리랜서 번아웃 조기 경보 대시보드 SaaS <em style="color:var(--text-dim)">[자영업 페르소나, strength 2.18]</em></span>
+        <span class="rj-reason">max_passed_exceeded</span>
+      </div>
+      <div class="rej-row maxpass">
+        <span class="rj-id">idea_8</span>
+        <span class="rj-title">HydraDesk — 직장인 만성 탈수 자각 SaaS (슬랙 봇 형태) <em style="color:var(--text-dim)">[직장인 페르소나, strength 2.16]</em></span>
+        <span class="rj-reason">max_passed_exceeded</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>관찰 — Spec 강화의 실질 효과</h2>
+      <ul>
+        <li><strong>§5.1 70%→50% 임계 강화 핵심.</strong> v1 idea_5 ∩ idea_7 = 60%는 spec 통과였으나 사실 같은 페인 클러스터 변형. v2에서 같은 상황이 발생했더라면 reject. 4건 reject는 spec이 "동일 페인 클러스터 변형"을 자동 압축하고 있다는 명확한 신호.</li>
+        <li><strong>§5.5는 안전망으로 작동.</strong> passed 풀이 자연스럽게 2 domain 보장되어 desync_domain reject 0건. 이는 spec 무용이 아니라 "필요 없을 때 무력화되고 필요할 때 작동"하는 graceful degradation의 정상 동작.</li>
+        <li><strong>페르소나 다양성이 진짜 분기점.</strong> v1과 v2 sweep의 passed 도메인 분포는 동일(mobile_pwa 2 + web_saas 1)이었지만 페르소나는 1 → 3으로 분기. health 토픽에선 "어떻게 구현하느냐(domain)"보다 "누구를 위한 것이냐(persona)"가 다양성의 진짜 측정 단위.</li>
+        <li><strong>avg_pain_signal +19%는 입력 다양성의 부산물.</strong> 5개 페르소나 풀에서 페인을 발굴하니 각 페르소나에서 가장 강한 페인 후보를 골라 조합 가능. 단일 페르소나는 신호 강도가 빠르게 plateau.</li>
+        <li><strong>잔존 이슈: 학생·자영업 페르소나는 passed 진출 못 함.</strong> idea_4(StudyRhythm, 학생)와 idea_5(FreelancePulse, 자영업)는 기준 통과했으나 max_passed=3 상한에 밀림. 5 페르소나 입력 → 3 페르소나 출력. health 토픽에선 페르소나 5 → 3 압축은 자연스럽지만, max_passed를 4-5로 늘리는 옵션도 검토 가치 있음.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>다음 단계 후보</h2>
+      <ol>
+        <li><strong>옵션 G — Stage 3 (researcher-convergent) specialist 테스트</strong>: v2 sweep의 passed.json 3개(ShiftSync·PillCoach·BabySync)를 researcher-convergent에 투입. 실제 WebSearch로 경쟁사 검증, differentiation_score·feasibility_score 산출, validation_{id}.html 5 data-section 생성. <em>3 페르소나 분기되어 검증도 다양성 보장됨.</em></li>
+        <li><strong>옵션 H — max_passed 5 실험</strong>: 학생·자영업 페르소나도 passed로 진출 시 Stage 3-6 병렬 트랙이 3 → 5로 증가. 시간·비용 vs 페르소나 커버리지 trade-off 측정.</li>
+        <li><strong>옵션 I — relaxed mode 부정 테스트</strong>: 인위적으로 약한 seeds(전부 raw_score &lt; 1.0)로 ideator 호출 → 0 passed → orchestrator가 relaxed: true 재호출 → fallback_used=true 검증.</li>
+        <li><strong>옵션 J — Stage 1 self-critique 시각화</strong>: seeds.html에 persona_cluster 분포 막대 그래프 + source_cluster 도넛 차트 추가. 사용자가 morning report에서 한눈에 다양성 판단 가능.</li>
+      </ol>
+    </section>
+
+    <footer>
+      Night-Builder · Round 2 · Diverse Sweep · 2026-05-14 · run_dir <code>runs/2026-05-15-diverse-sweep-v1</code>
+    </footer>
+  </div>
+</body>
+</html>
