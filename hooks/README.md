@@ -14,7 +14,7 @@ $HOME/.claude/hooks/<script>.sh
 | 스크립트 | 스코프 | 이벤트 | 역할 |
 | --- | --- | --- | --- |
 | `auto-code-review.sh` | user (`~/.claude/settings.json`) | `Stop` | 이번 턴에서 Edit/Write/MultiEdit 으로 파일이 수정되었고 아직 `code-reviewer` 서브에이전트가 호출되지 않았다면, 응답 종료를 막고 리뷰를 강제 호출하도록 지시한다. 모든 프로젝트에서 동작. 단순 질문·읽기 전용 작업에는 침묵. |
-| `auto-readme-sync.sh` | project (`<repo>/.claude/settings.json`) | `Stop` | myclaude 레포 한정. 레포 내부 파일을 수정했는데 `ReadMe.md` 가 갱신되지 않았으면 응답 종료를 막고 ReadMe 동기화를 강제한다. `$CLAUDE_PROJECT_DIR` 로 레포 루트를 식별. |
+| `auto-readme-sync.sh` | project (`<repo>/.claude/settings.json`) | `Stop` | myclaude 레포 한정. 레포 내부 파일을 수정했는데 `ReadMe.md` 가 갱신되지 않았으면 응답 종료를 막고 ReadMe 동기화를 강제한다. `$CLAUDE_PROJECT_DIR` 로 레포 루트를 식별. **변경 감지는 세 신호를 OR 로 결합**: (1) transcript 의 Edit/Write/MultiEdit `file_path`, (2) transcript 의 Bash `command` 가 `mv`·`rm`·`cp`·`mkdir`·`touch`·`git mv`·`git rm` 등을 포함, (3) `git status --porcelain` 결과에 `ReadMe.md` 외 변경 존재. 이렇게 해야 외부 도구·디렉터리 이동 같은 비-Edit 변경도 잡힌다. |
 
 ## 동작 원리 (auto-code-review.sh)
 

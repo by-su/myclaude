@@ -30,8 +30,10 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$input_cwd}"
 [ -n "$PROJECT_DIR" ] && [ -d "$PROJECT_DIR" ] || exit 0
 PROJECT_DIR="${PROJECT_DIR%/}"
 
-# 마지막 user 메시지 이후로 Edit/Write/MultiEdit 으로 만진 file_path 목록 추출.
-paths=$(jq -sr '
+# 마지막 user 메시지 이후의 assistant tool_use 만 추출.
+# - Edit/Write/MultiEdit: file_path 직접 회수
+# - Bash: command 문자열을 그대로 회수 (mv/rm/cp/git mv 등을 잡기 위한 보조 신호)
+tool_log=$(jq -sr '
   . as $all
   | ($all | map(.type) | reverse | index("user")) as $r_idx
   | if $r_idx == null then empty
@@ -41,29 +43,62 @@ paths=$(jq -sr '
         | select(.type == "assistant")
         | (.message.content // []) | if type == "array" then . else [] end
         | .[]
-        | select(.type == "tool_use" and (.name == "Edit" or .name == "Write" or .name == "MultiEdit"))
-        | (.input.file_path // empty)
+        | select(.type == "tool_use")
+        | if (.name == "Edit" or .name == "Write" or .name == "MultiEdit")
+            then "FILE\t" + (.input.file_path // "")
+          elif .name == "Bash"
+            then "BASH\t" + (.input.command // "" | gsub("\n"; " "))
+          else empty end
     end
 ' "$transcript_path" 2>/dev/null) || exit 0
-
-[ -n "$paths" ] || exit 0
 
 # 레포 내부 변경과 ReadMe 갱신 여부 분류.
 has_other_change=0
 readme_touched=0
-while IFS= read -r p; do
-  [ -n "$p" ] || continue
-  case "$p" in
-    "$PROJECT_DIR"/*) ;;       # repo 내부 → 검사 대상
-    *) continue ;;             # repo 외부 → 무시
+
+while IFS=$'\t' read -r kind payload; do
+  [ -n "$kind" ] || continue
+  case "$kind" in
+    FILE)
+      [ -n "$payload" ] || continue
+      case "$payload" in
+        "$PROJECT_DIR"/*) ;;     # repo 내부 → 검사 대상
+        *) continue ;;           # repo 외부 → 무시
+      esac
+      base=$(basename "$payload")
+      if [ "$base" = "ReadMe.md" ]; then
+        readme_touched=1
+      else
+        has_other_change=1
+      fi
+      ;;
+    BASH)
+      # 변경성 Bash 명령 패턴 감지 (mv, rm, cp, mkdir, rmdir, touch, git mv|rm|add|commit, chmod 등).
+      # 단순 휴리스틱이지만 git status 보조 검사로 false positive 가 걸러진다.
+      case " $payload " in
+        *" mv "*|*" rm "*|*" cp "*|*" mkdir "*|*" rmdir "*|*" touch "*) has_other_change=1 ;;
+        *" git mv "*|*" git rm "*|*"git mv "*|*"git rm "*) has_other_change=1 ;;
+        *) ;;
+      esac
+      ;;
   esac
-  base=$(basename "$p")
-  if [ "$base" = "ReadMe.md" ]; then
-    readme_touched=1
-  else
-    has_other_change=1
+done <<< "$tool_log"
+
+# git status 보조 검사: 레포 안에 ReadMe.md 외 git-추적 변경이 있으면 변경으로 간주.
+# (Edit/Write 휴리스틱이 못 잡은 mv·rm·외부 도구 변경까지 커버.)
+if command -v git >/dev/null 2>&1 && [ -d "$PROJECT_DIR/.git" ]; then
+  porcelain=$(git -C "$PROJECT_DIR" status --porcelain 2>/dev/null) || porcelain=""
+  if [ -n "$porcelain" ]; then
+    # ReadMe.md 한 줄만 변경되었다면 readme_touched 로 친다.
+    non_readme=$(printf '%s\n' "$porcelain" | awk '{ $1=""; sub(/^ +/,""); print }' | grep -vx 'ReadMe.md' || true)
+    if [ -n "$non_readme" ]; then
+      has_other_change=1
+    fi
+    if printf '%s\n' "$porcelain" | awk '{ $1=""; sub(/^ +/,""); print }' | grep -qx 'ReadMe.md'; then
+      readme_touched=1
+    fi
   fi
-done <<< "$paths"
+fi
 
 [ "$has_other_change" = "1" ] || exit 0
 [ "$readme_touched" = "0" ] || exit 0
