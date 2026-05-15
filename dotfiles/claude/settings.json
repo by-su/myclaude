@@ -1,26 +1,5 @@
 {
-  "model": "opus",
-  "autoMode": {
-    "environment": [
-      "$defaults",
-      "Organization: individual developer (bysu). Primary use: full-stack web development",
-      "Source control: github.com/bysu and all repos under it"
-    ],
-    "allow": [
-      "$defaults",
-      "Installing dependencies via npm, yarn, pnpm, pip is allowed: solo dev, local machine only",
-      "Running local dev servers (next dev, uvicorn, spring boot) is allowed",
-      "Docker build and docker compose up for local development is allowed"
-    ],
-    "soft_deny": [
-      "$defaults"
-    ],
-    "hard_deny": [
-      "$defaults"
-    ]
-  },
   "permissions": {
-    "defaultMode": "auto",
     "allow": [
       "Read",
       "Edit",
@@ -87,5 +66,26 @@
       "Bash(sudo rm *)",
       "Bash(> /dev/*)"
     ]
-  }
+  },
+  "model": "opus",
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "Installing dependencies via npm, yarn, pnpm, pip is allowed: solo dev, local machine only",
+      "Running local dev servers (next dev, uvicorn, spring boot) is allowed",
+      "Docker build and docker compose up for local development is allowed"
+    ],
+    "soft_deny": [
+      "$defaults"
+    ],
+    "hard_deny": [
+      "$defaults"
+    ],
+    "environment": [
+      "$defaults",
+      "Organization: individual developer (bysu). Primary use: full-stack web development",
+      "Source control: github.com/bysu and all repos under it"
+    ]
+  },
+  "skipAutoPermissionPrompt": true
 }
