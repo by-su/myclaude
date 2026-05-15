@@ -144,7 +144,7 @@ Stage 6   builder-backend           → backend/{id}/  (PRD 에 백엔드 신호
 
 | 스킬 | 용도 |
 | --- | --- |
-| `color-palette-recommender` | 서비스 컨셉 입력 → 무드별 컬러 팔레트 3종 (역할/HEX/WCAG 대비비 포함) + 비교 HTML. 파이프라인 Stage 4.5 에서 자동 사용. |
+| `color-palette-recommender` | 서비스 컨셉/PRD 입력 → **디자인 언어(Flat/Glass/Soft/Bold/Cyber) 자동 추론** + 무드별 컬러 팔레트 3종 (역할/HEX/WCAG 대비비) + Material 토큰(surface RGBA, backdrop-blur, border highlight, elevation 3단계, drop shadow) + UI 요소별 적용 가이드 + 디자인 언어가 **실제로 적용된** 비교 HTML. 파이프라인 Stage 4.5 에서 자동 사용. |
 | `design-guide-extractor` | 첨부 이미지(UI 스크린샷·브랜드 자산) → 풀스택 디자인 핸드오프 패키지 (DESIGN.md, tokens.json, tailwind.config.ts, globals.css, React 컴포넌트, SVG). |
 | `git-commit-assistant` | 변경 코드 Pre-commit 검증 + Atomic Commit + Conventional Commits 형식으로 분리 커밋. |
 | `nextjs-seo` | Next.js App Router 기반 Metadata API · sitemap.ts · robots.ts · JSON-LD · OG · 다국어 SEO · Core Web Vitals 최적화 일체. |

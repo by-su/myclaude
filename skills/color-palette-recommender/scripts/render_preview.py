@@ -151,6 +151,160 @@ def derive_border(bg_hex: str, text_hex: str) -> str:
     return _mix(text_hex, bg_hex, 0.82)
 
 
+# ---------- Design language material defaults ----------
+
+# 5 design languages. Each language has sensible defaults that go with its
+# visual code. The model can override anything per palette via the "material"
+# object; whatever it omits, we fill in from these defaults.
+
+_DESIGN_LANGUAGES = {"flat", "glass", "soft", "bold", "cyber"}
+
+
+def _language_defaults(language: str, primary_hex: str, bg_hex: str,
+                       border_hex: str, surface_hex: str) -> dict:
+    """Return the default material tokens for the given design language.
+
+    Defaults are tuned against the resolved palette so that, e.g., Cyber
+    glow uses the *actual* Primary, and Glass surface uses an alpha-blended
+    version of the *actual* Surface. The model can override any field.
+    """
+    pr, pg, pb = _hex_to_rgb(primary_hex)
+    sr, sg, sb = _hex_to_rgb(surface_hex)
+    bg_lum = _relative_luminance(bg_hex)
+    is_dark = bg_lum < 0.3
+
+    if language == "flat":
+        return {
+            "surface_alpha": 1.0,
+            "blur": "0px",
+            "saturate": "100%",
+            "border_top": border_hex,
+            "border_bottom": border_hex,
+            "elevation": [
+                "0 1px 2px rgba(15,18,30,0.04)",
+                "0 2px 8px rgba(15,18,30,0.06)",
+                "0 8px 24px rgba(15,18,30,0.10)",
+            ],
+            "background_treatment": "solid",
+            "radius": "12px",
+        }
+
+    if language == "glass":
+        # Light glass = brighter surface tint (white-ish), dark glass = surface stays close to its own tone
+        if is_dark:
+            return {
+                "surface_alpha": 0.52,
+                "blur": "28px",
+                "saturate": "180%",
+                "border_top": "rgba(255,255,255,0.14)",
+                "border_bottom": "rgba(0,0,0,0.32)",
+                "elevation": [
+                    "0 1px 2px rgba(0,0,0,0.30)",
+                    "0 12px 40px rgba(0,0,0,0.40)",
+                    "0 24px 64px rgba(0,0,0,0.50), 0 2px 6px rgba(0,0,0,0.30)",
+                ],
+                "background_treatment": "gradient",
+                "radius": "18px",
+            }
+        return {
+            "surface_alpha": 0.72,
+            "blur": "24px",
+            "saturate": "180%",
+            "border_top": "rgba(255,255,255,0.45)",
+            "border_bottom": "rgba(0,0,0,0.06)",
+            "elevation": [
+                "0 1px 2px rgba(15,18,30,0.04)",
+                "0 12px 40px rgba(15,18,30,0.12)",
+                "0 24px 64px rgba(15,18,30,0.18), 0 2px 6px rgba(15,18,30,0.08)",
+            ],
+            "background_treatment": "gradient",
+            "radius": "18px",
+        }
+
+    if language == "soft":
+        return {
+            "surface_alpha": 1.0,
+            "blur": "0px",
+            "saturate": "100%",
+            "border_top": "rgba(0,0,0,0.03)",
+            "border_bottom": "rgba(0,0,0,0.02)",
+            "elevation": [
+                "0 2px 8px rgba(15,18,30,0.04)",
+                "0 12px 32px rgba(15,18,30,0.06)",
+                "0 24px 56px rgba(15,18,30,0.08)",
+            ],
+            "background_treatment": "soft-radial",
+            "radius": "24px",
+        }
+
+    if language == "bold":
+        return {
+            "surface_alpha": 1.0,
+            "blur": "0px",
+            "saturate": "100%",
+            "border_top": "transparent",
+            "border_bottom": "transparent",
+            "elevation": [
+                "4px 4px 0 rgba(0,0,0,0.08)",
+                "8px 8px 0 rgba(0,0,0,0.12)",
+                "12px 12px 0 rgba(0,0,0,0.18)",
+            ],
+            "background_treatment": "color-block",
+            "radius": "4px",
+        }
+
+    if language == "cyber":
+        return {
+            "surface_alpha": 1.0,
+            "blur": "0px",
+            "saturate": "100%",
+            "border_top": f"rgba({pr},{pg},{pb},0.42)",
+            "border_bottom": f"rgba({pr},{pg},{pb},0.18)",
+            "elevation": [
+                f"0 0 16px rgba({pr},{pg},{pb},0.22), 0 2px 8px rgba(0,0,0,0.30)",
+                f"0 0 32px rgba({pr},{pg},{pb},0.32), 0 4px 16px rgba(0,0,0,0.40)",
+                f"0 0 48px rgba({pr},{pg},{pb},0.42), 0 8px 24px rgba(0,0,0,0.50)",
+            ],
+            "background_treatment": "oled-vignette",
+            "radius": "8px",
+        }
+
+    # Unknown language → fall back to flat
+    return _language_defaults("flat", primary_hex, bg_hex, border_hex, surface_hex)
+
+
+def resolve_material(palette: dict, resolved: dict) -> dict:
+    """Resolve material tokens for a palette. Reads design_language and the
+    optional `material` object; fills in defaults for anything the user did
+    not specify.
+    """
+    language = (palette.get("design_language") or "flat").lower()
+    if language not in _DESIGN_LANGUAGES:
+        language = "flat"
+
+    defaults = _language_defaults(
+        language,
+        resolved["primary"],
+        resolved["background"],
+        resolved["border"],
+        resolved["surface"],
+    )
+    user = dict(palette.get("material") or {})
+
+    # Merge: user overrides defaults
+    merged = {**defaults, **{k: v for k, v in user.items() if v is not None}}
+    merged["language"] = language
+
+    # Compute the effective surface color the user *sees* — i.e. the surface
+    # color alpha-blended against the background. This matters for Glass: real
+    # contrast for text on a glass card is text vs this effective surface,
+    # not text vs the abstract surface hex.
+    alpha = float(merged.get("surface_alpha", 1.0))
+    merged["effective_surface"] = _mix(resolved["background"], resolved["surface"], alpha)
+
+    return merged
+
+
 def pick_on_color(chip_hex: str, text_hex: str, bg_hex: str) -> tuple[str, float]:
     """Pick the best foreground color to place text on top of `chip_hex`.
 
@@ -261,11 +415,14 @@ def resolve_palette(palette: dict) -> dict:
     }
 
 
-def build_contrast_report(r: dict) -> list[dict]:
+def build_contrast_report(r: dict, m: dict | None = None) -> list[dict]:
     """Compute the contrast pairs that actually appear in the rendered preview.
 
     Each row is shown in the UI so the user knows whether real text is
-    readable, not just abstract Text-on-Background.
+    readable. When `m` (resolved material) is provided and the surface is
+    translucent (Glass), we additionally check `Text → Effective Surface` —
+    the actual blended surface the user sees, which is what matters for
+    real-world readability on glass cards.
     """
     pairs = [
         ("Text → Background",      r["text"],       r["background"]),
@@ -273,6 +430,8 @@ def build_contrast_report(r: dict) -> list[dict]:
         ("On-Primary → Primary",   r["on_primary"], r["primary"]),
         ("Muted → Background",     r["muted"],      r["background"]),
     ]
+    if m is not None and float(m.get("surface_alpha", 1.0)) < 0.95:
+        pairs.append(("Text → Effective Surface (glass)", r["text"], m["effective_surface"]))
     # Only show accent row if accent is meaningfully different from primary
     if r["accent"].lower() != r["primary"].lower():
         pairs.append(("On-Accent → Accent", r["on_accent"], r["accent"]))
@@ -288,7 +447,7 @@ def build_contrast_report(r: dict) -> list[dict]:
 # ---------- HTML rendering ----------
 
 _PALETTE_CARD = """
-<article class="palette" style="
+<article class="palette" data-language="{language}" style="
   --p-primary:{primary};
   --p-secondary:{secondary};
   --p-accent:{accent};
@@ -300,16 +459,30 @@ _PALETTE_CARD = """
   --p-on-primary:{on_primary};
   --p-on-accent:{on_accent};
   --p-on-surface:{on_surface};
+  --p-surface-rgba:{surface_rgba};
+  --p-blur:{blur};
+  --p-saturate:{saturate};
+  --p-border-top:{border_top};
+  --p-border-bottom:{border_bottom};
+  --p-elev-1:{elev_1};
+  --p-elev-2:{elev_2};
+  --p-elev-3:{elev_3};
+  --p-radius:{radius};
+  --p-stage-bg:{stage_bg};
   --shell-fade:{shell_fade};
 ">
   <header class="palette-head">
     <h2>{idx}. {name}</h2>
     <p class="tagline">{tagline}</p>
+    <div class="language-pill">
+      <span class="lang-dot lang-dot--{language}"></span>
+      <span class="lang-label">{language_label}</span>
+    </div>
   </header>
 
   <dl class="meta">
     <div><dt>무드</dt><dd>{mood}</dd></div>
-    <div><dt>타깃 핏</dt><dd>{target_fit}</dd></div>
+    <div><dt>언어 근거</dt><dd>{language_rationale}</dd></div>
     <div><dt>근거</dt><dd>{rationale}</dd></div>
   </dl>
 
@@ -317,9 +490,25 @@ _PALETTE_CARD = """
     {swatches}
   </ul>
 
-  <section class="sample">
-    {sample_card}
+  <section class="stage" data-treatment="{treatment}">
+    <div class="stage-surface">
+      {sample_card}
+    </div>
   </section>
+
+  <details class="material" open>
+    <summary>Material 토큰 ({language_label})</summary>
+    <ul class="material-list">
+      {material_rows}
+    </ul>
+  </details>
+
+  <details class="ui-map">
+    <summary>UI 요소 적용 가이드</summary>
+    <ul class="ui-map-list">
+      {ui_map_rows}
+    </ul>
+  </details>
 
   <section class="contrast">
     <h4>대비비 (미리보기에 실제로 나타나는 FG/BG 쌍)</h4>
@@ -474,18 +663,114 @@ _HTML = """<!doctype html>
   .chip-hex {{ font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px; }}
   .chip-usage {{ color: var(--shell-muted); font-size: 11px; }}
 
+  /* ---- Language pill on palette head ---- */
+  .language-pill {{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--shell-border);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--shell-fg);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }}
+  .lang-dot {{
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--shell-fg);
+  }}
+  .lang-dot--flat   {{ background: #94A3B8; }}
+  .lang-dot--glass  {{ background: linear-gradient(135deg, #A5B4FC, #F0ABFC); }}
+  .lang-dot--soft   {{ background: #FDE68A; }}
+  .lang-dot--bold   {{ background: #F97316; }}
+  .lang-dot--cyber  {{ background: radial-gradient(circle, #67E8F9 0%, #06B6D4 60%, #0E7490 100%); box-shadow: 0 0 6px rgba(103,232,249,0.7); }}
+
+  /* ---- Stage: the language-aware preview area ----
+     This is the BG that the sample card sits on. Glass needs a non-flat BG
+     for the blur to be visible; Cyber needs an OLED vignette; Soft needs a
+     subtle radial; Flat/Bold can stay solid. */
+  .stage {{
+    position: relative;
+    border-radius: 16px;
+    padding: 28px;
+    overflow: hidden;
+    isolation: isolate;
+    background: var(--p-bg);
+  }}
+  .stage[data-treatment="solid"] {{ background: var(--p-bg); }}
+  .stage[data-treatment="gradient"] {{
+    background: var(--p-stage-bg);
+  }}
+  .stage[data-treatment="soft-radial"] {{
+    background:
+      radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--p-primary) 34%, var(--p-bg)) 0%, transparent 55%),
+      radial-gradient(circle at 88% 78%, color-mix(in srgb, var(--p-accent) 28%, var(--p-bg)) 0%, transparent 50%),
+      var(--p-bg);
+  }}
+  .stage[data-treatment="oled-vignette"] {{
+    background:
+      radial-gradient(ellipse at top, color-mix(in srgb, var(--p-primary) 22%, #000) 0%, #050608 60%, #000 100%),
+      #000;
+  }}
+  .stage[data-treatment="color-block"] {{
+    background:
+      linear-gradient(135deg, var(--p-primary) 0%, var(--p-primary) 38%, var(--p-bg) 38%, var(--p-bg) 100%);
+  }}
+  /* Subtle noise/dither so gradients don't band */
+  .stage::before {{
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background:
+      repeating-radial-gradient(circle at 0 0, rgba(255,255,255,0.015) 0, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
+    z-index: 0;
+  }}
+  .stage-surface {{ position: relative; z-index: 1; }}
+
+  /* ---- Sample card defaults (Flat) ---- */
   .sample {{ border-radius: 12px; padding: 0; }}
   .sample-card {{
     position: relative;
     background: var(--p-bg);
     color: var(--p-text);
-    border-radius: 14px;
+    border-radius: var(--p-radius);
     padding: 22px 22px 20px;
-    border: 1px solid var(--p-border);
+    border: 1px solid var(--p-border-top);
+    box-shadow: var(--p-elev-2);
     min-height: 220px;
     display: flex;
     flex-direction: column;
     gap: 6px;
+  }}
+
+  /* ---- Per-language sample-card treatment ---- */
+  .palette[data-language="glass"] .sample-card {{
+    background: var(--p-surface-rgba);
+    -webkit-backdrop-filter: blur(var(--p-blur)) saturate(var(--p-saturate));
+    backdrop-filter: blur(var(--p-blur)) saturate(var(--p-saturate));
+    border: 1px solid var(--p-border-top);
+    box-shadow:
+      inset 0 -1px 0 var(--p-border-bottom),
+      inset 0 1px 0 var(--p-border-top),
+      var(--p-elev-2);
+  }}
+  .palette[data-language="soft"] .sample-card {{
+    background: var(--p-surface);
+    border: 1px solid var(--p-border-top);
+    box-shadow: var(--p-elev-2);
+  }}
+  .palette[data-language="bold"] .sample-card {{
+    background: var(--p-surface);
+    border: none;
+    box-shadow: var(--p-elev-2);
+  }}
+  .palette[data-language="cyber"] .sample-card {{
+    background: var(--p-surface);
+    border: 1px solid var(--p-border-top);
+    box-shadow:
+      inset 0 1px 0 var(--p-border-top),
+      var(--p-elev-2);
   }}
   .sample-pill {{
     display: inline-block;
@@ -597,6 +882,49 @@ _HTML = """<!doctype html>
   .progress-track {{ height: 6px; background: var(--p-surface); border-radius: 3px; margin: 8px 0 4px; overflow: hidden; }}
   .progress-fill {{ height: 100%; background: var(--p-primary); border-radius: 3px; }}
 
+  /* ---- Material tokens + UI map sections ---- */
+  details.material, details.ui-map {{
+    border: 1px solid var(--shell-border);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }}
+  details.material > summary, details.ui-map > summary {{
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--shell-fg);
+  }}
+  .material-list, .ui-map-list {{
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 6px;
+    font-size: 11.5px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }}
+  .material-row, .ui-map-row {{
+    display: grid;
+    grid-template-columns: minmax(110px, 0.4fr) 1fr;
+    gap: 10px;
+    align-items: start;
+  }}
+  .material-row .k, .ui-map-row .k {{
+    color: var(--shell-muted);
+  }}
+  .material-row .v, .ui-map-row .v {{
+    color: var(--shell-fg);
+    word-break: break-word;
+  }}
+  .ui-map-list {{ font-family: -apple-system, "Pretendard", system-ui, sans-serif; font-size: 12px; }}
+  .ui-map-row .v code {{
+    background: var(--shell-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+  }}
+
   .contrast h4 {{ margin: 0 0 10px; font-size: 12px; color: var(--shell-muted); font-weight: 500; }}
   .contrast-list {{ margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }}
   .contrast-row {{
@@ -679,20 +1007,32 @@ _CSS_VAR_ORDER = [
 ]
 
 
-def _css_snippet(resolved: dict, original_colors: list[dict]) -> str:
-    """Emit CSS variables for every role present in the user's palette
-    (skipping derived ones — but always emitting the on-color tokens, since
-    those are the answer to 'what color should this button's text be')."""
+def _css_snippet(resolved: dict, original_colors: list[dict], material: dict | None = None) -> str:
+    """Emit CSS variables for every role present in the user's palette plus
+    the resolved material tokens. Material tokens are emitted regardless of
+    design language — they're useful for the dev even on Flat (just with
+    surface_alpha=1 and blur=0)."""
     explicit_roles = {c["role"].lower() for c in original_colors}
     lines = []
     for key, var in _CSS_VAR_ORDER:
         if key in explicit_roles or key in ("primary", "background", "text"):
             lines.append(f"{var}: {resolved[key].upper()};")
-    # always include on-color tokens — they're the practical answer for button
-    # / badge / surface text, regardless of palette size.
     lines.append(f"--color-on-primary: {resolved['on_primary'].upper()};")
     if resolved["accent"].lower() != resolved["primary"].lower():
         lines.append(f"--color-on-accent: {resolved['on_accent'].upper()};")
+
+    if material is not None:
+        sr, sg, sb = _hex_to_rgb(resolved["surface"])
+        lines.append("")
+        lines.append(f"/* Material — design_language: {material['language']} */")
+        lines.append(f"--material-surface: rgba({sr}, {sg}, {sb}, {material['surface_alpha']});")
+        lines.append(f"--material-blur: blur({material['blur']}) saturate({material['saturate']});")
+        lines.append(f"--material-border-top: {material['border_top']};")
+        lines.append(f"--material-border-bottom: {material['border_bottom']};")
+        lines.append(f"--elevation-1: {material['elevation'][0]};")
+        lines.append(f"--elevation-2: {material['elevation'][1]};")
+        lines.append(f"--elevation-3: {material['elevation'][2]};")
+        lines.append(f"--radius-card: {material['radius']};")
     return "\n".join(lines)
 
 
@@ -884,6 +1224,142 @@ def _cta_label(domain_hint: str) -> str:
     return "시작하기"
 
 
+# ---------- Material + UI map rendering helpers ----------
+
+_LANGUAGE_LABEL = {
+    "flat":  "Flat / Minimal",
+    "glass": "Glass / Material",
+    "soft":  "Soft / Pillowy",
+    "bold":  "Bold / Editorial",
+    "cyber": "Cyber / Neon Dark",
+}
+
+
+def _surface_rgba(surface_hex: str, alpha: float) -> str:
+    r, g, b = _hex_to_rgb(surface_hex)
+    return f"rgba({r},{g},{b},{alpha:.2f})"
+
+
+def _stage_gradient(language: str, resolved: dict, treatment: str) -> str:
+    """Return a CSS background value for the stage area, based on treatment.
+
+    The stage is what the sample card sits *on top of*. For Glass it must be
+    visually rich (gradient) so backdrop-blur is visible; for others it can
+    be the palette BG or a per-language treatment.
+    """
+    primary = resolved["primary"]
+    secondary = resolved.get("secondary") or primary
+    accent = resolved.get("accent") or primary
+    bg = resolved["background"]
+
+    if treatment == "gradient":
+        # For Glass: a soft three-stop gradient between brand colors. We
+        # bias toward the BG hue on the far edge so the card still feels
+        # "on this palette" rather than "on a totally different page."
+        return (
+            f"linear-gradient(135deg, "
+            f"{primary} 0%, "
+            f"{secondary} 50%, "
+            f"{accent} 100%)"
+        )
+    if treatment == "soft-radial":
+        return bg  # actual radial is in CSS via color-mix
+    if treatment == "oled-vignette":
+        return "#000"  # actual radial vignette is in CSS
+    if treatment == "color-block":
+        return bg  # gradient is in CSS using the data-treatment selector
+    return bg  # "solid" or unknown
+
+
+def _build_material_rows(material: dict) -> str:
+    """Render the Material tokens detail list."""
+    rows = [
+        ("design_language",   _LANGUAGE_LABEL.get(material["language"], material["language"])),
+        ("surface_alpha",     f"{material['surface_alpha']}"),
+        ("backdrop-blur",     str(material["blur"])),
+        ("backdrop-saturate", str(material["saturate"])),
+        ("border_top",        str(material["border_top"])),
+        ("border_bottom",     str(material["border_bottom"])),
+        ("elevation L1",      material["elevation"][0]),
+        ("elevation L2",      material["elevation"][1]),
+        ("elevation L3",      material["elevation"][2]),
+        ("background_treatment", str(material["background_treatment"])),
+        ("radius",            str(material["radius"])),
+    ]
+    out = []
+    for k, v in rows:
+        out.append(
+            f'<li class="material-row"><span class="k">{k}</span>'
+            f'<span class="v">{v}</span></li>'
+        )
+    return "\n".join(out)
+
+
+def _build_ui_map_rows(material: dict, resolved: dict) -> str:
+    """Render the UI element → token mapping list. This is the table that
+    tells a designer/dev *exactly* how each color/token gets used.
+    """
+    lang = material["language"]
+    bg = resolved["background"].upper()
+    primary = resolved["primary"].upper()
+    text = resolved["text"].upper()
+    radius = material["radius"]
+
+    if lang == "glass":
+        surface_css = (
+            f"<code>background: {material['effective_surface'].upper()}</code> "
+            f"(<code>{_surface_rgba(resolved['surface'], material['surface_alpha'])}</code> "
+            f"+ <code>backdrop-filter: blur({material['blur']}) saturate({material['saturate']})</code>)"
+        )
+        border_css = (
+            f"<code>border: 1px solid {material['border_top']}</code> + "
+            f"<code>box-shadow: inset 0 -1px 0 {material['border_bottom']}</code>"
+        )
+    elif lang == "cyber":
+        surface_css = f"<code>background: {resolved['surface'].upper()}</code> (lifted OLED black)"
+        border_css = f"<code>border: 1px solid {material['border_top']}</code> (Primary glow)"
+    elif lang == "soft":
+        surface_css = f"<code>background: {resolved['surface'].upper()}</code>"
+        border_css = "거의 없음 — ambient shadow가 경계 역할"
+    elif lang == "bold":
+        surface_css = f"<code>background: {resolved['surface'].upper()}</code>"
+        border_css = "없음 — 컬러 블록과 무거운 directional shadow로 구분"
+    else:  # flat
+        surface_css = f"<code>background: {resolved['surface'].upper()}</code>"
+        border_css = f"<code>border: 1px solid {resolved['border'].upper()}</code>"
+
+    treatment = material["background_treatment"]
+    if treatment == "gradient":
+        bg_css = f"<code>linear-gradient(135deg, {primary}, {resolved['accent'].upper()})</code> (Glass용 — blur가 살아나도록)"
+    elif treatment == "soft-radial":
+        bg_css = f"<code>radial-gradient(...{primary}, {bg})</code> + <code>{bg}</code> base"
+    elif treatment == "oled-vignette":
+        bg_css = f"OLED 블랙 + Primary 글로우 비네트"
+    elif treatment == "color-block":
+        bg_css = f"<code>{primary}</code> 큰 컬러 블록 + <code>{bg}</code> 영역 분할"
+    else:
+        bg_css = f"<code>background: {bg}</code> (단색)"
+
+    shadow_css = f"<code>box-shadow: {material['elevation'][1]}</code> (L2 = card 기본)"
+
+    rows = [
+        ("전체 배경 (Body)", bg_css),
+        ("카드 표면 (Surface)", surface_css),
+        ("테두리 (Border)", border_css),
+        ("공간감 그림자 (Shadow)", shadow_css),
+        ("CTA 버튼", f"<code>background: {primary}; color: {resolved['on_primary'].upper()}; border-radius: {radius}</code>"),
+        ("본문 텍스트", f"<code>color: {text}</code>"),
+        ("보조 텍스트", f"<code>color: {resolved['muted'].upper()}</code>"),
+    ]
+    out = []
+    for k, v in rows:
+        out.append(
+            f'<li class="ui-map-row"><span class="k">{k}</span>'
+            f'<span class="v">{v}</span></li>'
+        )
+    return "\n".join(out)
+
+
 def _build_sample_card(sample_type: str, service: str, cta_label: str) -> str:
     tmpl = _SAMPLE_TEMPLATES.get(sample_type) or _SAMPLE_TEMPLATES["generic"]
     if sample_type == "generic":
@@ -905,8 +1381,12 @@ def render(data: dict) -> str:
     all_bg_dark = True
     for idx, p in enumerate(palettes, start=1):
         r = resolve_palette(p)
+        m = resolve_material(p, r)
         bg_lum = _relative_luminance(r["background"])
         is_dark_bg = bg_lum < 0.2
+        # Cyber always uses dark OLED stage, so count it as dark for shell mode
+        if m["language"] == "cyber":
+            is_dark_bg = True
         all_bg_dark = all_bg_dark and is_dark_bg
         shell_fade = "rgba(255,255,255,0.08)" if is_dark_bg else "rgba(0,0,0,0.08)"
 
@@ -914,8 +1394,12 @@ def render(data: dict) -> str:
             _CONTRAST_ROW.format(
                 pair=row["pair"], fg=row["fg"], bg=row["bg"],
                 text=row["text"], cls=row["class"],
-            ) for row in build_contrast_report(r)
+            ) for row in build_contrast_report(r, m)
         )
+
+        treatment = m["background_treatment"]
+        stage_bg = _stage_gradient(m["language"], r, treatment)
+        surface_rgba = _surface_rgba(r["surface"], float(m["surface_alpha"]))
 
         cards.append(_PALETTE_CARD.format(
             idx=idx,
@@ -924,6 +1408,9 @@ def render(data: dict) -> str:
             mood=p.get("mood", ""),
             target_fit=p.get("target_fit", ""),
             rationale=p.get("rationale", ""),
+            language=m["language"],
+            language_label=_LANGUAGE_LABEL.get(m["language"], m["language"]),
+            language_rationale=p.get("language_rationale", "(언어 선택 이유가 명시되지 않음 — 추천서에 1문장 추가하세요)"),
             swatches=_render_swatches(p),
             primary=r["primary"],
             secondary=r["secondary"],
@@ -936,10 +1423,23 @@ def render(data: dict) -> str:
             on_primary=r["on_primary"],
             on_accent=r["on_accent"],
             on_surface=r["on_surface"],
+            surface_rgba=surface_rgba,
+            blur=m["blur"],
+            saturate=m["saturate"],
+            border_top=m["border_top"],
+            border_bottom=m["border_bottom"],
+            elev_1=m["elevation"][0],
+            elev_2=m["elevation"][1],
+            elev_3=m["elevation"][2],
+            radius=m["radius"],
+            stage_bg=stage_bg,
+            treatment=treatment,
             shell_fade=shell_fade,
             sample_card=sample_card_html,
+            material_rows=_build_material_rows(m),
+            ui_map_rows=_build_ui_map_rows(m, r),
             contrast_rows=contrast_rows_html,
-            css_snippet=_css_snippet(r, p.get("colors", [])),
+            css_snippet=_css_snippet(r, p.get("colors", []), m),
         ))
 
     shell_mode = "dark" if all_bg_dark else "light"
@@ -967,14 +1467,19 @@ def main() -> int:
     has_fail = False
     for p in palettes:
         r = resolve_palette(p)
-        print(f"  · {p.get('name', '?')}:")
-        for row in build_contrast_report(r):
+        m = resolve_material(p, r)
+        lang = _LANGUAGE_LABEL.get(m["language"], m["language"])
+        print(f"  · {p.get('name', '?')}  [{lang}]")
+        if "design_language" not in p:
+            print("      ⚠ design_language 미지정 → flat으로 가정. JSON에 명시하세요.")
+        for row in build_contrast_report(r, m):
             marker = "✓" if row["class"] == "pass" else ("⚠" if row["class"] == "warn" else "✗")
             if row["class"] == "fail":
                 has_fail = True
-            print(f"      {marker} {row['pair']:<24} {row['text']}")
+            print(f"      {marker} {row['pair']:<36} {row['text']}")
     if has_fail:
         print("\n⚠ 일부 FG/BG 쌍이 WCAG AA(4.5:1)에 미달합니다. 팔레트를 조정하거나 on-color 토큰을 명시하세요.")
+        print("   (Glass의 경우 'Text → Effective Surface' 항목이 실제 사용자가 보는 카드 위 대비입니다.)")
     return 0
 
 

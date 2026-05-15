@@ -3,59 +3,108 @@
   "evals": [
     {
       "id": 1,
-      "name": "crypto-exchange-mz",
-      "prompt": "20대 후반~30대 초반 타깃의 새로운 가상자산 거래소 앱을 만들고 있어요. 기존 업비트/빗썸처럼 너무 무겁고 보수적인 느낌은 피하고, 좀 더 모던하고 트렌디하면서도 '내 돈 맡길 만하다'는 신뢰감은 지키고 싶어요. 다크모드 우선으로 갈 생각입니다. 컬러 팔레트 추천해주세요.",
-      "expected_output": "서로 다른 무드의 5색 팔레트 3종을 PALETTES.md와 palette-preview.html에 저장. 핀테크의 신뢰감 코드(딥 블루/차콜 등)와 MZ 타깃의 모던/대담함(보라/네온 등)을 다른 방향으로 펼쳐 보여주는 3가지 안. 다크모드 우선 컨텍스트가 적어도 1~2개 팔레트에 반영되어야 함.",
+      "name": "premium-ai-fintech-glass-expected",
+      "prompt": "Apple Wallet 같은 프리미엄 톤의 AI 기반 자산관리 모바일 앱을 만들고 있어요. 타깃은 20~30대 IT 종사자, iOS 네이티브 느낌이 중요합니다. 차세대 핀테크 분위기를 내고 싶은데 트러스트 신호는 유지하고 싶어요. 컬러 팔레트 추천해주세요.",
+      "expected_output": "Glass / Material 디자인 언어 중심으로 펼친 3개 팔레트. PRD의 '프리미엄 + Apple + AI + iOS 네이티브' 신호가 강하므로 최소 2개 팔레트는 Glass로. 각 팔레트에 surface_alpha, blur, border_top(빛 반사), elevation 3단계가 명시되어야 하고, palette-preview.html에서 실제 backdrop-filter가 적용된 카드가 보여야 함.",
       "files": [],
       "expectations": [
         "정확히 3개의 팔레트가 생성되었다",
-        "각 팔레트가 정확히 5개의 색을 포함한다",
-        "각 팔레트에 Primary, Secondary, Accent, Background, Text 5개 역할이 모두 있다",
-        "모든 HEX 코드가 #RRGGBB 형식 (6자리 16진수)이다",
-        "각 팔레트의 Text 색과 Background 색 대비비가 4.5:1 이상이다 (WCAG AA)",
-        "palette-preview.html 파일이 생성되었다",
-        "PALETTES.md 파일이 생성되었다",
-        "3개 팔레트의 Primary 색이 서로 충분히 다른 색조에 속한다 (HSL Hue 30도 이상 차이 또는 명도가 크게 다름)",
-        "각 팔레트마다 무드/타깃/근거 설명이 모두 포함되어 있다",
-        "적어도 1개 팔레트가 다크모드(어두운 배경) 컨텍스트를 반영한다"
+        "각 팔레트에 design_language 필드가 명시되어 있다",
+        "최소 2개 팔레트가 'glass' 디자인 언어로 설정되어 있다",
+        "각 팔레트에 Primary, Background, Text 필수 3색이 있다",
+        "각 팔레트에 surface_alpha, blur, border_top, elevation 등의 material 토큰이 명시되거나 design_language 디폴트로 채워진다",
+        "각 팔레트의 Text/Background 대비비가 4.5:1 이상이다 (WCAG AA)",
+        "Glass 팔레트의 Text vs Effective Surface 대비비도 4.5:1 이상이다",
+        "PALETTES.md에 각 팔레트의 UI 요소별 적용 가이드(전체 배경 / 카드 표면 / 테두리 / 그림자 / 텍스트) 표가 포함되어 있다",
+        "palette-preview.html에 backdrop-filter CSS가 실제로 출력되어 있다",
+        "palette-preview.html에 data-language=\"glass\" 속성이 적용된 article이 존재한다"
       ]
     },
     {
       "id": 2,
-      "name": "mindfulness-meditation-app",
-      "prompt": "직장인을 위한 마음챙김 명상 앱을 만들고 있어요. 출퇴근길이나 점심시간에 5~15분씩 짧게 쓰는 용도. 너무 종교적이거나 뉴에이지스럽지 않게, 미니멀하고 모던한 웰니스 톤으로 가고 싶어요. 컬러 팔레트 3개 추천해주세요.",
-      "expected_output": "차분하고 부드러운 무드를 중심으로 한 3개 팔레트. 채도가 너무 높지 않고, 차분함/회복/명상 정서에 맞는 톤. 라벤더/페일 블루/세이지 그린/베이지 같은 톤이 잘 어울리지만 동일 톤 변주가 아닌 3가지 다른 방향(예: 부드러운 모노톤 / 따뜻한 자연 / 시원한 라이트 등).",
+      "name": "kids-learning-app-soft-expected",
+      "prompt": "초등학교 저학년(7~10세) 대상 한글 학습 앱을 만들고 있어요. 부모님이 안심하고 맡길 수 있는 차분하면서도 친근한 톤, 시각적으로 자극이 강하지 않고 글자 가독성이 매우 중요합니다. 컬러 팔레트 추천 부탁드립니다.",
+      "expected_output": "Soft / Pillowy 디자인 언어 중심의 3개 팔레트. 어린이 학습 컨텍스트에서는 작은 글씨 가독성이 핵심이므로 Glass(backdrop-blur)는 부적절. 큰 radius + 큰 ambient shadow + 채도 낮은 따뜻한 톤이 자연스러움. Cyber/Bold는 자극이 강해서 빨간 깃발.",
       "files": [],
       "expectations": [
         "정확히 3개의 팔레트가 생성되었다",
-        "각 팔레트가 정확히 5개의 색을 포함한다",
-        "각 팔레트에 Primary, Secondary, Accent, Background, Text 5개 역할이 모두 있다",
-        "모든 HEX 코드가 #RRGGBB 형식 (6자리 16진수)이다",
-        "각 팔레트의 Text 색과 Background 색 대비비가 4.5:1 이상이다 (WCAG AA)",
-        "palette-preview.html 파일이 생성되었다",
-        "PALETTES.md 파일이 생성되었다",
-        "어떤 팔레트도 채도 매우 높은 빨강/형광색을 Primary로 쓰지 않는다 (명상 컨텍스트에서 부적절)",
-        "3개 팔레트가 서로 다른 무드 방향을 보여준다 (Primary 색조 또는 명도 차이가 명확함)",
-        "각 팔레트마다 무드/타깃/근거 설명이 모두 포함되어 있다"
+        "각 팔레트에 design_language 필드가 명시되어 있다",
+        "어떤 팔레트도 'cyber'나 'bold' 디자인 언어를 쓰지 않는다 (어린이 가독성 컨텍스트 부적절)",
+        "어떤 팔레트도 'glass' 디자인 언어를 단독으로 강요하지 않는다 (Soft 또는 Flat이 주력이어야 함)",
+        "어떤 팔레트도 채도 매우 높은 형광색을 Primary로 쓰지 않는다",
+        "각 팔레트의 Text/Background 대비비가 4.5:1 이상이다",
+        "PALETTES.md에 각 팔레트의 UI 요소별 적용 가이드 표가 포함되어 있다",
+        "palette-preview.html이 생성되었다",
+        "각 팔레트의 language_rationale에 가독성/어린이 친화 이유가 언급되어 있다"
       ]
     },
     {
       "id": 3,
-      "name": "korean-bento-delivery",
-      "prompt": "건강한 한식 도시락을 만들어 사무실로 배달해주는 서비스를 준비 중입니다. 30~40대 직장인 대상이고, 깔끔하고 정갈한 한식 + 식단 관리 두 가지를 다 보여주고 싶어요. 컬러 팔레트 3개 추천 부탁드려요.",
-      "expected_output": "F&B(따뜻한 톤)와 헬시푸드(그린/크림 톤)가 만나는 지점에서 3가지 다른 방향. 한식의 토속색(테라코타/머스타드/옻나무 갈색)을 활용하거나, 모던 헬시푸드 톤(그린+크림+우드)을 살리는 등 서로 다른 해석이 보여야 함.",
+      "name": "crypto-trading-cyber-expected",
+      "prompt": "30대 액티브 트레이더를 위한 가상자산 거래소 앱입니다. 다크모드 우선, OLED 디스플레이를 가정하고, 데이터 발광감과 트레이딩 콘솔 느낌을 살리고 싶어요. 차트, 호가창, 주문이 메인 화면입니다. 컬러 팔레트 추천해주세요.",
+      "expected_output": "Cyber / Neon Dark 디자인 언어 중심의 3개 팔레트. PRD의 '다크 우선 + OLED + 트레이딩 콘솔 + 데이터 발광감' 신호가 명백하므로 최소 2개는 Cyber. Background는 OLED 블랙(#000~#0B0D17 영역), Primary는 발광 톤(시안/일렉트릭/그린 등). 시그널 컬러(상승/하락) 운영 노트가 포함되면 더 좋음.",
       "files": [],
       "expectations": [
         "정확히 3개의 팔레트가 생성되었다",
-        "각 팔레트가 정확히 5개의 색을 포함한다",
-        "각 팔레트에 Primary, Secondary, Accent, Background, Text 5개 역할이 모두 있다",
-        "모든 HEX 코드가 #RRGGBB 형식 (6자리 16진수)이다",
-        "각 팔레트의 Text 색과 Background 색 대비비가 4.5:1 이상이다 (WCAG AA)",
-        "palette-preview.html 파일이 생성되었다",
-        "PALETTES.md 파일이 생성되었다",
+        "각 팔레트에 design_language 필드가 명시되어 있다",
+        "최소 2개 팔레트가 'cyber' 디자인 언어로 설정되어 있다",
+        "최소 2개 팔레트의 Background가 어두운 톤이다 (relative luminance < 0.1)",
+        "각 팔레트의 Text/Background 대비비가 4.5:1 이상이다",
+        "PALETTES.md에 시그널 컬러(상승/하락) 또는 트레이딩 운영 노트가 언급되어 있다",
+        "palette-preview.html에 oled-vignette 또는 cyber 관련 CSS treatment가 출력되어 있다",
+        "각 팔레트의 UI 요소별 적용 가이드 표에 'glow border' 또는 Primary alpha border가 명시되어 있다"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "korean-bento-delivery-mixed",
+      "prompt": "건강한 한식 도시락을 만들어 사무실로 배달해주는 서비스를 준비 중입니다. 30~40대 직장인 대상이고, 깔끔하고 정갈한 한식 + 식단 관리 두 가지를 다 보여주고 싶어요. 컬러 팔레트 3개 추천 부탁드려요.",
+      "expected_output": "F&B 따뜻한 톤 중심. PRD가 디자인 언어를 명시하지 않으므로 비교축을 만들기 위해 2~3개 다른 언어 섞기 권장(예: Soft 1개 + Flat 1개 + Bold 1개). Glass는 음식 사진과 충돌할 수 있어 신중. 차가운 블루/보라 Primary는 식욕 컨텍스트에서 부적절.",
+      "files": [],
+      "expectations": [
+        "정확히 3개의 팔레트가 생성되었다",
+        "각 팔레트에 design_language 필드가 명시되어 있다",
         "어떤 팔레트도 차가운 블루/보라 위주의 Primary를 쓰지 않는다 (F&B 식욕 컨텍스트에서 부적절)",
         "3개 팔레트의 Primary 색이 서로 충분히 다른 색조에 속한다 (HSL Hue 30도 이상 차이)",
-        "각 팔레트마다 무드/타깃/근거 설명이 모두 포함되어 있다"
+        "각 팔레트의 Text/Background 대비비가 4.5:1 이상이다",
+        "PALETTES.md에 각 팔레트의 UI 요소별 적용 가이드 표가 포함되어 있다",
+        "palette-preview.html이 생성되었다",
+        "각 팔레트마다 language_rationale이 1문장으로 명시되어 있다"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "b2b-admin-dashboard-flat-expected",
+      "prompt": "물류 회사 내부 어드민 도구를 만들고 있어요. 운영팀이 하루 종일 보면서 데이터 테이블·필터·CSV 다운로드를 다루는 화면이 메인이에요. 정보 밀도가 높고 화면 위에서 오래 작업하는 도구입니다. 컬러 팔레트 추천해주세요.",
+      "expected_output": "Flat / Minimal 디자인 언어 중심의 3개 팔레트. 정보 밀도 높은 B2B 어드민에서는 Glass(backdrop-blur)가 작은 글씨와 데이터 테이블 가독성을 해친다. Cyber 다크는 일부 가능하지만 메인은 Flat 라이트. 채도 leveled 분포, Primary 한정적 사용(저장/완료 등 결정적 액션에만).",
+      "files": [],
+      "expectations": [
+        "정확히 3개의 팔레트가 생성되었다",
+        "각 팔레트에 design_language 필드가 명시되어 있다",
+        "최소 2개 팔레트가 'flat' 디자인 언어로 설정되어 있다",
+        "어떤 팔레트도 'glass'를 모든 3개 자리에 채우지 않는다 (어드민 데이터 테이블 컨텍스트 부적절)",
+        "각 팔레트의 Text/Background 대비비가 4.5:1 이상이다",
+        "각 팔레트의 채도(S) 분포에 채도 60%+ 색이 1개 이하다 (정보 밀도 컨텍스트)",
+        "PALETTES.md에 각 팔레트의 UI 요소별 적용 가이드 표가 포함되어 있다",
+        "palette-preview.html이 생성되었다"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "mindfulness-meditation-soft-expected",
+      "prompt": "직장인을 위한 마음챙김 명상 앱을 만들고 있어요. 출퇴근길이나 점심시간에 5~15분씩 짧게 쓰는 용도. 너무 종교적이거나 뉴에이지스럽지 않게, 미니멀하고 모던한 웰니스 톤으로 가고 싶어요. 컬러 팔레트 3개 추천해주세요.",
+      "expected_output": "Soft / Pillowy 중심 + 1개 정도 Flat 변주. 차분한 명상 컨텍스트에서 Glass(blur)는 작은 글자 가독성 해침, Cyber는 자극 강함. 큰 ambient shadow + 채도 낮은 자연 톤(라벤더/세이지/베이지 등).",
+      "files": [],
+      "expectations": [
+        "정확히 3개의 팔레트가 생성되었다",
+        "각 팔레트에 design_language 필드가 명시되어 있다",
+        "어떤 팔레트도 'cyber' 디자인 언어를 쓰지 않는다",
+        "최소 2개 팔레트가 'soft' 디자인 언어로 설정되어 있다",
+        "어떤 팔레트도 채도 매우 높은 빨강/형광색을 Primary로 쓰지 않는다",
+        "3개 팔레트가 서로 다른 무드 방향을 보여준다 (Primary hue 또는 색 온도 분화)",
+        "각 팔레트의 Text/Background 대비비가 4.5:1 이상이다",
+        "PALETTES.md에 각 팔레트의 UI 요소별 적용 가이드 표가 포함되어 있다",
+        "palette-preview.html이 생성되었다"
       ]
     }
   ]
