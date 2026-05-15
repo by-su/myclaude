@@ -107,9 +107,9 @@ Stage 3  researcher-convergent      → validation_{id}.html / passed.json
             ↓  (통과 아이디어별 fanout)
 Stage 4   prd-writer                → prd/{id}.html
             ↓
-Stage 4.5 color-palette-recommender → palette/{id}/PALETTES.md  (skill, 자동)
-Stage 5   designer                  → design/{id}.html  (wireframe-architect 스킬 활용)
-            ↓
+Stage 4.5 color-palette-recommender → palette/{id}/PALETTES.md  (skill, 자동 — designer 에는 전달하지 않음)
+Stage 5   designer                  → design/{id}.html  (그레이스케일 frame+flow, wireframe-architect 스킬 활용)
+            ↓  (review 모드: 여기서 단일 승인 게이트 — Stage 1~5 통합 요약)
 Stage 5.5 design-guide-extractor    → design-guide/{id}/  (skill, 선택)
 Stage 6   builder-frontend          → app/{id}/  (Next.js 14 App Router)
 Stage 6   builder-backend           → backend/{id}/  (PRD 에 백엔드 신호 있을 때만)
@@ -122,7 +122,7 @@ Stage 6   builder-backend           → backend/{id}/  (PRD 에 백엔드 신호
 | 모드 | 동작 |
 | --- | --- |
 | **auto** | Stage 1–6 전체를 사용자 개입 없이 끝까지 실행 |
-| **review** (기본) | Stage 1·2·3·4·4.5·5 각 단계 완료 후 사용자 승인(컬러 팔레트 포함)을 받고 다음 단계로. Stage 5.5·6 부터는 자동 |
+| **review** (기본) | Stage 1 → 2 → 3 → 4 → 4.5 → 5를 **중간 개입 없이 한 번에 연속 실행**하고, Stage 5 완료 직후 **단 한 번** 통합 요약을 보여주고 승인받는다. 승인 후 Stage 5.5·6 은 자동. 와이어프레임은 그레이스케일(프레임 + 플로우)만 사용하며 색은 Stage 6 빌드에서 적용된다 |
 
 호출은 `orchestrator` 에이전트를 Task 로 띄우거나, 대화창에서 직접 지시하면 된다. 모드를 명시하지 않으면 `review` 가 기본값.
 
@@ -135,7 +135,7 @@ Stage 6   builder-backend           → backend/{id}/  (PRD 에 백엔드 신호
 | `ideator` | Stage 2 | seeds 의 페인 클러스터에서 구현 가능한 아이디어 ≥10개 생성. Self-Critique (strongest_objection → rebuttal) 강제. 최대 3개 통과 후보 선별. |
 | `researcher-convergent` | Stage 3 | 통과 아이디어의 시장 현실 + 기술 feasibility 검증. 경쟁사·차별화 점수. PRD 진행 여부 결정. |
 | `prd-writer` | Stage 4 | 통과 아이디어 + validation 데이터 → 결정 준비 완료(decision-ready) PRD HTML. `prd-generator` 스킬 호출, 없으면 자체 폴백. |
-| `designer` | Stage 5 | PRD + 컬러 팔레트 → 사용자 플로우(인라인 SVG) + 핵심 화면 와이어프레임(≥3, 모바일 퍼스트) 단일 HTML. `wireframe-architect` 스킬 우선 호출. |
+| `designer` | Stage 5 | PRD → 사용자 플로우(인라인 SVG) + 핵심 화면 와이어프레임(≥3, 모바일 퍼스트) 단일 HTML. **그레이스케일 frame + flow 전용 — 팔레트/브랜드 컬러 적용 금지.** `wireframe-architect` 스킬 우선 호출. 색상은 Stage 6 빌드 단계에서 입혀진다. |
 | `builder-frontend` | Stage 6 | PRD + 와이어프레임 + 팔레트 + 디자인 가이드 → Next.js 14 App Router 프론트엔드를 `app/{id}/` 에 생성. `npm install && npm run dev` 한 번으로 실행되는 상태. |
 | `builder-backend` | Stage 6 | PRD 에 백엔드 신호가 있을 때만 NestJS + MySQL 8.0 REST API + Docker Compose 생성. 순수 로컬/오프라인 MVP면 즉시 SKIP. |
 | `code-reviewer` | (상시) | 코드 변경 직후 diff 한정 리뷰 — 스택 자동 감지 (`agents/code-reviewer/rules/`), Critical/Major/Minor 분류. `hooks/auto-code-review.sh` 가 파일 수정 턴 끝에 자동 호출. |
