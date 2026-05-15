@@ -211,5 +211,5 @@ $EDITOR myclaude/setup/mcp/.env
 bash myclaude/setup/init/install.sh
 ```
 
-`dotfiles/install.sh` 는 `~/.claude/settings.json` 을 `dotfiles/claude/settings.json` 으로의 심링크로 교체한다. 이 파일에는 auto 권한 프롬프트 스킵 옵션(`skipAutoPermissionPrompt`), autoMode classifier 규칙(신뢰 인프라·allow·soft_deny·hard_deny), permission allow/deny 패턴이 모두 포함되어 있어 한 번의 심링크로 동일한 권한 환경이 구성된다.
+`dotfiles/install.sh` 는 `~/.claude/settings.json` 을 `dotfiles/claude/settings.json` 으로의 심링크로 교체한다. 이 파일에는 auto 권한 모드(`permissions.defaultMode: "auto"`)와 자동 승인 시 프롬프트 스킵 옵션(`skipAutoPermissionPrompt`), autoMode classifier 규칙(신뢰 인프라·allow·soft_deny·hard_deny), permission allow/deny 패턴이 모두 포함되어 있어 한 번의 심링크로 동일한 권한 환경이 구성된다.
 `setup/init/install.sh` 는 자기 위치(`setup/init/`) 기준으로 `../../skills`, `../../agents` 를 절대경로로 풀어내므로, 폴더를 어디에 두든 구조만 유지되면 동작한다.
