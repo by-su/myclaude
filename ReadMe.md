@@ -31,6 +31,9 @@ myclaude/
 │   ├── auto-code-review.sh       # user-scope Stop hook: 파일 수정 턴 끝에 code-reviewer 자동 호출
 │   ├── auto-readme-sync.sh       # project-scope Stop hook: 이 레포 수정 시 ReadMe.md 갱신 강제
 │   └── README.md
+├── dotfiles/                 # 크로스 머신 설정 동기화용 (심링크 기반)
+│   ├── claude/settings.json      # Claude Code user-scope 설정 원본 (permission 모드 + autoMode classifier 규칙 + allow/deny)
+│   └── install.sh                # ~/.claude/settings.json → 이 파일로 심링크 생성
 ├── setup/
 │   ├── init/
 │   │   └── install.sh        # skills/agents/hooks 심볼릭 링크 + ~/.claude/settings.json 패치 + MCP 호출
@@ -197,12 +200,16 @@ Stage 6   builder-backend           → backend/{id}/  (PRD 에 백엔드 신호
 # 1. 레포 clone (또는 폴더 복사)
 git clone <repo>
 
-# 2. (선택) MCP 시크릿 채우기
+# 2. Claude Code permission 설정 심링크
+bash myclaude/dotfiles/install.sh
+
+# 3. (선택) MCP 시크릿 채우기
 cp myclaude/setup/mcp/.env.example myclaude/setup/mcp/.env
 $EDITOR myclaude/setup/mcp/.env
 
-# 3. 설치
+# 4. 스킬·에이전트·hook 설치
 bash myclaude/setup/init/install.sh
 ```
 
-`install.sh` 는 자기 위치(`setup/init/`) 기준으로 `../../skills`, `../../agents` 를 절대경로로 풀어내므로, 폴더를 어디에 두든 구조만 유지되면 동작한다.
+`dotfiles/install.sh` 는 `~/.claude/settings.json` 을 `dotfiles/claude/settings.json` 으로의 심링크로 교체한다. 이 파일에는 auto 모드 기본 설정, autoMode classifier 규칙(신뢰 인프라·allow·soft_deny·hard_deny), permission allow/deny 패턴이 모두 포함되어 있어 한 번의 심링크로 동일한 권한 환경이 구성된다.
+`setup/init/install.sh` 는 자기 위치(`setup/init/`) 기준으로 `../../skills`, `../../agents` 를 절대경로로 풀어내므로, 폴더를 어디에 두든 구조만 유지되면 동작한다.
