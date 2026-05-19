@@ -1,0 +1,509 @@
+<!--
+  cto-architect HTML template
+  ─────────────────────────────────────────────────────────
+  사용법: 이 파일을 베이스로 컨텐츠를 채워 넣는다.
+  - 외부 의존성: Mermaid.js CDN 하나만 허용.
+  - 모든 CSS는 인라인. 폰트는 system stack만 사용.
+  - 8개 섹션은 그대로 유지하고, 사용 안 하는 섹션은 "해당 없음"으로 채운다 (구조 일관성).
+
+  치환 토큰:
+    {{PROJECT_TITLE}}       — PRD 제목 / 프로젝트 이름
+    {{ONE_LINE_SUMMARY}}    — 권장 아키텍처 한 줄 요약 (히어로 영역)
+    {{PRD_BASENAME}}        — PRD 파일 basename (없으면 비워둠)
+    {{GENERATED_AT}}        — YYYY-MM-DD
+  나머지 섹션 본문(s2 ~ s8)은 직접 채운다.
+-->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{PROJECT_TITLE}} · Architecture Blueprint</title>
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --surface: #ffffff;
+      --border: #e2e6ec;
+      --border-strong: #c9d1da;
+      --text: #1a1f2c;
+      --text-muted: #5b6473;
+      --text-faint: #8a93a3;
+      --accent: #2563eb;
+      --accent-soft: #eff4ff;
+      --warning: #b45309;
+      --warning-soft: #fef6e7;
+      --danger: #b91c1c;
+      --danger-soft: #fdecec;
+      --ok: #15803d;
+      --ok-soft: #e8f5ec;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+      --radius: 10px;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+      --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo",
+                   "Noto Sans KR", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    /* ─── 좌측 TOC ─────────────────────────── */
+    aside.toc {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 28px 20px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+    }
+    aside.toc .brand {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    aside.toc h2 {
+      font-size: 15px;
+      margin: 0 0 18px;
+      line-height: 1.35;
+      color: var(--text);
+    }
+    aside.toc nav ol {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      counter-reset: toc;
+    }
+    aside.toc nav li {
+      counter-increment: toc;
+      margin: 2px 0;
+    }
+    aside.toc nav a {
+      display: block;
+      padding: 7px 10px;
+      border-radius: 6px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13.5px;
+      transition: background 120ms ease, color 120ms ease;
+    }
+    aside.toc nav a::before {
+      content: counter(toc, decimal-leading-zero) " · ";
+      color: var(--text-faint);
+      font-variant-numeric: tabular-nums;
+    }
+    aside.toc nav a:hover {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    /* ─── 메인 ─────────────────────────────── */
+    main {
+      padding: 40px 56px 80px;
+      max-width: 1080px;
+    }
+
+    header.hero {
+      margin-bottom: 40px;
+      padding: 28px 30px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+    header.hero .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    header.hero h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.25;
+    }
+    header.hero p.summary {
+      margin: 8px 0 0;
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+    header.hero .meta {
+      margin-top: 16px;
+      font-size: 12.5px;
+      color: var(--text-faint);
+    }
+
+    section {
+      margin: 0 0 48px;
+      padding: 28px 30px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      scroll-margin-top: 24px;
+    }
+    section h2.section-title {
+      margin: 0 0 6px;
+      font-size: 20px;
+      letter-spacing: -0.005em;
+    }
+    section .section-sub {
+      margin: 0 0 22px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    section h3 {
+      margin: 28px 0 10px;
+      font-size: 16px;
+      letter-spacing: -0.002em;
+    }
+    section p { margin: 10px 0; }
+
+    /* ─── 카드 그리드 ─────────────────────────── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .card {
+      padding: 16px 18px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+    }
+    .card .card-title {
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+    .card .card-body {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+    .card.warn { background: var(--warning-soft); border-color: #f3d8a3; }
+    .card.danger { background: var(--danger-soft); border-color: #f4bcbc; }
+    .card.ok { background: var(--ok-soft); border-color: #bfe2ca; }
+
+    /* ─── 테이블 ─────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 13.5px;
+    }
+    thead th {
+      text-align: left;
+      padding: 10px 12px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border-strong);
+      font-weight: 700;
+      font-size: 12.5px;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+    tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--accent-soft); }
+    td code, th code {
+      background: #f1f4f8;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 12.5px;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    }
+
+    /* ─── Pill / Tag ─────────────────────────── */
+    .pill {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      line-height: 1.6;
+    }
+    .pill.mvp { background: var(--ok-soft); color: var(--ok); }
+    .pill.p2 { background: var(--accent-soft); color: var(--accent); }
+    .pill.p3 { background: #f1f4f8; color: var(--text-muted); }
+    .pill.warn { background: var(--warning-soft); color: var(--warning); }
+    .pill.danger { background: var(--danger-soft); color: var(--danger); }
+
+    /* ─── Mermaid 컨테이너 ──────────────────── */
+    .diagram {
+      margin: 16px 0;
+      padding: 18px;
+      background: #fafbfd;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    .diagram .mermaid {
+      display: flex;
+      justify-content: center;
+      min-width: 100%;
+    }
+
+    /* ─── 코드/인라인 텍스트 ─────────────────── */
+    code:not(td code):not(th code) {
+      background: #f1f4f8;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+      font-size: 13px;
+    }
+    blockquote {
+      margin: 14px 0;
+      padding: 10px 14px;
+      border-left: 3px solid var(--accent);
+      background: var(--accent-soft);
+      color: var(--text);
+      border-radius: 0 6px 6px 0;
+      font-size: 14px;
+    }
+
+    /* ─── 리스트 들여쓰기 트리 ───────────────── */
+    .tree { padding-left: 0; list-style: none; }
+    .tree li {
+      position: relative;
+      padding: 4px 0 4px 18px;
+      border-left: 1px dashed var(--border-strong);
+      margin-left: 6px;
+    }
+    .tree li::before {
+      content: "";
+      position: absolute;
+      top: 16px;
+      left: -1px;
+      width: 12px;
+      height: 1px;
+      background: var(--border-strong);
+    }
+    .tree li > .tree { margin-top: 4px; }
+
+    /* ─── 반응형 ─────────────────────────────── */
+    @media (max-width: 920px) {
+      .layout { grid-template-columns: 1fr; }
+      aside.toc {
+        position: relative;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      main { padding: 28px 22px 60px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="toc">
+      <div class="brand">CTO Architect</div>
+      <h2>{{PROJECT_TITLE}}</h2>
+      <nav>
+        <ol>
+          <li><a href="#s1">Executive Summary</a></li>
+          <li><a href="#s2">기능 분해</a></li>
+          <li><a href="#s3">시스템 컴포넌트</a></li>
+          <li><a href="#s4">API 설계</a></li>
+          <li><a href="#s5">데이터 모델 (ERD)</a></li>
+          <li><a href="#s6">비기능 요구사항</a></li>
+          <li><a href="#s7">리스크 & 트레이드오프</a></li>
+          <li><a href="#s8">가정 (Assumptions)</a></li>
+        </ol>
+      </nav>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <div class="eyebrow">Architecture Blueprint</div>
+        <h1>{{PROJECT_TITLE}}</h1>
+        <p class="summary">{{ONE_LINE_SUMMARY}}</p>
+        <div class="meta">Generated {{GENERATED_AT}} · Source PRD: <code>{{PRD_BASENAME}}</code></div>
+      </header>
+
+      <!-- ===================== 1. Executive Summary ===================== -->
+      <section id="s1">
+        <h2 class="section-title">1 · Executive Summary</h2>
+        <p class="section-sub">한눈에 보는 핵심: 이 시스템이 무엇이고, 왜 이렇게 설계했으며, 어떤 단계로 진화할지.</p>
+        <!-- 채울 것:
+             - PRD 핵심 (3~4문장)
+             - 권장 아키텍처 1줄 요약 (blockquote)
+             - MVP / Phase 2 / Phase 3 한 줄씩 카드 그리드
+        -->
+      </section>
+
+      <!-- ===================== 2. 기능 분해 ===================== -->
+      <section id="s2">
+        <h2 class="section-title">2 · 기능 분해</h2>
+        <p class="section-sub">도메인 → 모듈 → 기능 → 하위 기능. MVP·Phase 태그로 우선순위를 함께 표시.</p>
+        <!-- 채울 것:
+             - Mermaid graph TD (작으면) 또는 .tree 들여쓰기 리스트
+             - 각 항목에 <span class="pill mvp">MVP</span> 등 우선순위 태그
+        -->
+      </section>
+
+      <!-- ===================== 3. 시스템 컴포넌트 ===================== -->
+      <section id="s3">
+        <h2 class="section-title">3 · 시스템 컴포넌트 다이어그램</h2>
+        <p class="section-sub">컴포넌트 책임, 의존성 방향, 외부 시스템과의 통신 패턴.</p>
+        <div class="diagram">
+          <div class="mermaid">
+graph TD
+  user["사용자"]
+  web["Web App"]
+  api["API 게이트웨이"]
+  user --> web --> api
+          </div>
+        </div>
+        <!-- 채울 것:
+             - 위 Mermaid 블록 교체 (graph TD 또는 graph LR)
+             - 컴포넌트 책임 표 또는 카드 그리드로 보충
+        -->
+      </section>
+
+      <!-- ===================== 4. API 설계 ===================== -->
+      <section id="s4">
+        <h2 class="section-title">4 · API 설계</h2>
+        <p class="section-sub">프로토콜 선택 근거 + 도메인별 주요 엔드포인트.</p>
+        <h3>프로토콜 결정</h3>
+        <p><!-- REST/GraphQL/gRPC/이벤트 결정 근거 채우기 --></p>
+        <h3>엔드포인트</h3>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 90px;">메서드</th>
+              <th>경로</th>
+              <th>책임</th>
+              <th style="width: 110px;">인증</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- 도메인별 그룹으로 채우기 -->
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ===================== 5. 데이터 모델 ERD ===================== -->
+      <section id="s5">
+        <h2 class="section-title">5 · 데이터 모델 (ERD)</h2>
+        <p class="section-sub">핵심 엔티티·관계·카디널리티 + 저장소 선택 패턴과 일관성 모델.</p>
+        <div class="diagram">
+          <div class="mermaid">
+erDiagram
+  USER ||--o{ ORDER : places
+  USER {
+    string id PK
+    string email
+  }
+  ORDER {
+    string id PK
+    string user_id FK
+    int total
+  }
+          </div>
+        </div>
+        <h3>저장소 선택 패턴</h3>
+        <p><!-- RDB / 문서형 / 키-값 / 시계열 / 검색엔진 선택 근거 --></p>
+        <h3>캐싱 & 일관성</h3>
+        <p><!-- 캐싱 패턴, 강한 일관성 vs 결과적 일관성 결정 근거 --></p>
+      </section>
+
+      <!-- ===================== 6. 비기능 요구사항 ===================== -->
+      <section id="s6">
+        <h2 class="section-title">6 · 비기능 요구사항</h2>
+        <p class="section-sub">보안 / 성능 / 확장성 / 가용성 / 관측성. 해당 없으면 명시.</p>
+        <div class="card-grid">
+          <div class="card"><div class="card-title">보안</div><div class="card-body"><!-- 내용 --></div></div>
+          <div class="card"><div class="card-title">성능</div><div class="card-body"><!-- 내용 --></div></div>
+          <div class="card"><div class="card-title">확장성</div><div class="card-body"><!-- 내용 --></div></div>
+          <div class="card"><div class="card-title">가용성</div><div class="card-body"><!-- 내용 --></div></div>
+          <div class="card"><div class="card-title">관측성</div><div class="card-body"><!-- 내용 --></div></div>
+        </div>
+      </section>
+
+      <!-- ===================== 7. 리스크 & 트레이드오프 ===================== -->
+      <section id="s7">
+        <h2 class="section-title">7 · 리스크 & 트레이드오프</h2>
+        <p class="section-sub">각 주요 결정의 4축 분석 + Top 3 리스크 카드.</p>
+        <h3>주요 결정 트레이드오프</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>결정</th>
+              <th>선택안</th>
+              <th>대안</th>
+              <th>비용·이점</th>
+              <th>마이그레이션 비용</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- 채우기 -->
+          </tbody>
+        </table>
+        <h3>Top 3 리스크</h3>
+        <div class="card-grid">
+          <div class="card danger"><div class="card-title">리스크 1</div><div class="card-body"><!-- 설명 + 완화 방안 --></div></div>
+          <div class="card warn"><div class="card-title">리스크 2</div><div class="card-body"><!-- 설명 + 완화 방안 --></div></div>
+          <div class="card warn"><div class="card-title">리스크 3</div><div class="card-body"><!-- 설명 + 완화 방안 --></div></div>
+        </div>
+      </section>
+
+      <!-- ===================== 8. 가정 (Assumptions) ===================== -->
+      <section id="s8">
+        <h2 class="section-title">8 · 가정 (Assumptions)</h2>
+        <p class="section-sub">PRD에 명시되지 않아 추론한 항목. 사용자 확인이 필요한 부분.</p>
+        <ul>
+          <!-- 가정 항목 채우기 -->
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "default",
+      themeVariables: {
+        fontFamily: 'inherit',
+        primaryColor: '#eff4ff',
+        primaryTextColor: '#1a1f2c',
+        primaryBorderColor: '#2563eb',
+        lineColor: '#5b6473',
+        secondaryColor: '#f7f8fa',
+        tertiaryColor: '#ffffff'
+      },
+      flowchart: { curve: 'basis', padding: 12 },
+      er: { useMaxWidth: true }
+    });
+  </script>
+</body>
+</html>
