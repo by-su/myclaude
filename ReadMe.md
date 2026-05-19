@@ -150,6 +150,7 @@ Stage 6   builder-backend           → backend/{id}/  (PRD 에 백엔드 신호
 | `nextjs-seo` | Next.js App Router 기반 Metadata API · sitemap.ts · robots.ts · JSON-LD · OG · 다국어 SEO · Core Web Vitals 최적화 일체. |
 | `prompt-architect` | 27개 프롬프트 프레임워크 기반으로 프롬프트 분석·개선. 7개 intent 카테고리에 따라 프레임워크 추천. |
 | `skill-creator` | 새 스킬 작성, 기존 스킬 개선, 스킬 평가/벤치마크 (variance 분석 포함). |
+| `spring-boot-kotlin-best-practices` | 10년차 Kotlin/Spring 시니어 아키텍트 페르소나로 Spring Boot 4.x + Kotlin 2.0 + JDK 21 프로덕션 백엔드 작성·리뷰. 15개 카테고리(빌드/레이어/DI/Config/REST/Coroutines/도메인/예외/검증/데이터/보안/테스트/관측/린트/테스트문서)를 원칙→DO→DON'T→근거 4단으로. ktlint+detekt 동시 운용, 15가지 엣지케이스 체크리스트, `docs/test-cases/{Target}.md` 자동 동기화 강제. |
 | `staff-frontend-engineer` | Staff-level FE 페르소나로 엔터프라이즈급 React/Next.js/TypeScript 코드. shadcn/ui + Tailwind + Zustand + React Query 컨벤션. |
 | `strategic-pm` | 미완성 아이디어 → 가치 제안 → 기능 명세 → MVP 스코프 → 시장 검증 → 수익화 모델 → PRD 까지 대화형 기획 파트너. |
 | `webapp-testing` | Playwright 로 로컬 웹앱 검증 (스크린샷, 콘솔/네트워크 로그, 동작 테스트). |

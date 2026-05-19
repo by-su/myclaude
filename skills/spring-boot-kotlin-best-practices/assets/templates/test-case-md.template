@@ -1,0 +1,53 @@
+# {TARGET_CLASS_NAME} Test Cases
+
+> Source: `{SOURCE_PATH}`
+> Test: `{TEST_PATH}`
+> Last updated: {YYYY-MM-DD}
+
+## Summary
+- Total: {N}개 (Happy: {h}, Edge: {e}, Failure: {f})
+- Coverage focus: {핵심 도메인 행동 한 줄 요약}
+
+## Test Cases
+
+| # | Category | Scenario | Given | When | Then | Status |
+|---|----------|----------|-------|------|------|--------|
+| 1 | Happy | {기본 정상 동작} | {유효한 입력} | {메서드 호출} | {반환값/사이드이펙트} | ✅ |
+| 2 | Edge:Boundary | {경계값} | {min/max/±1 값} | {메서드 호출} | {예상 동작} | ✅ |
+| 3 | Edge:Null | {null/empty/blank} | {빈 입력} | {메서드 호출} | {ValidationException/거부} | ✅ |
+| 4 | Edge:Concurrency | {동시 호출} | {N개 코루틴 동시 실행} | {메서드 호출} | {1개 성공, 나머지 충돌} | ✅ |
+| 5 | Edge:Transaction | {트랜잭션 롤백} | {도중 예외 발생} | {트랜잭션 메서드 호출} | {모두 롤백} | ✅ |
+| 6 | Edge:External | {외부 시스템 실패} | {timeout/5xx} | {메서드 호출} | {도메인 상태 매핑} | ✅ |
+| 7 | Edge:Validation | {제약 위반} | {부정 입력} | {메서드 호출} | {ConstraintViolationException} | ✅ |
+| 8 | Edge:Cancellation | {호출자 취소} | {job.cancel()} | {진행 중} | {정리 호출 + 리소스 해제} | ✅ |
+| 9 | Edge:Idempotency | {중복 요청} | {동일 idempotency key} | {2회 호출} | {동일 응답} | 🟡 |
+| 10 | Edge:Security | {mass assignment} | {DTO에 없는 필드 포함 body} | {메서드 호출} | {무시되거나 거부} | ✅ |
+| 11 | Failure | {의도된 실패} | {잘못된 상태} | {메서드 호출} | {DomainException} | ✅ |
+| 12 | Edge:Timezone | {타임존 경계} | {KST 자정 직전} | {메서드 호출} | {정확한 날짜 매핑} | ⏭️ ({사유 + JIRA-####}) |
+
+## Edge Case Coverage Matrix
+
+15개 엣지케이스 카테고리 중 적용 가능한 항목 체크. 미적용 항목은 사유를 인라인으로 명시.
+
+- [ ] Happy path
+- [ ] Null/Empty/Blank
+- [ ] Boundary values
+- [ ] Collection boundaries — {적용 시 체크, 아니면 사유}
+- [ ] Concurrency — {적용 시 체크, 아니면 사유}
+- [ ] Transaction rollback — {적용 시 체크, 아니면 사유}
+- [ ] External system failure — {적용 시 체크, 아니면 사유}
+- [ ] Auth/Authz — {Controller 레이어에서 다루면 사유 명시}
+- [ ] Validation failure
+- [ ] Pagination — {목록 메서드 있을 때, 아니면 사유}
+- [ ] Timezone/DST — {시간 다룰 때, 아니면 사유}
+- [ ] Unicode/Emoji — {문자열 저장 시, 아니면 사유}
+- [ ] Coroutine cancellation — {suspend 함수일 때, 아니면 사유}
+- [ ] Idempotency — {POST/외부 호출 있을 때, 아니면 사유}
+- [ ] Security (SQLi/XSS/mass assignment/IDOR) — {Controller/Service에서 다룸}
+
+## Notes
+
+- {도메인 결정 사항 — 왜 특정 케이스를 의도적으로 제외했는지}
+- {외부 의존성 / 환경 제약}
+- {다음 sprint에서 보강할 케이스}
+- {⏭️ 케이스의 활성화 조건과 일정}
